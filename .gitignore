@@ -1,0 +1,13 @@
+Release/
+Debug/
+RC/
+*.opensdf
+*.sdf
+*.VC.opendb
+.suo
+*.VC.db
+*/ipch/
+.vscode/
+*.~
+*.un~
+/ipch/
