@@ -30,29 +30,13 @@ public:
 	bool ReloadShader();
 	void DeleteShader();
 	bool RayCollision(XMVECTOR& rayPos, XMVECTOR rayDir, float speed, XMVECTOR& colPos, XMVECTOR& colNormN);
-	int DisableBelowLevel(float fY);
-	int EnableAll(void);
 
 private:
-
-	struct FaceCollisionData
-	{
-		XMFLOAT3 m_v0;
-		XMFLOAT3 m_v1;
-		XMFLOAT3 m_v2;
-		XMFLOAT3 m_vNormal;
-		bool m_bCollided; // Debug colouring
-		bool m_bDisabled;
-	};
-
 	bool LoadHeightMap(char* filename, float gridSize, float heightRange);
-	bool RayTriangle(int nFaceIndex, const XMVECTOR& rayPos, const XMVECTOR& rayDir, XMVECTOR& colPos, XMVECTOR& colNormN, float& colDist);
+	bool RayTriangle(const XMVECTOR& vert0, const XMVECTOR& vert1, const XMVECTOR& vert2, const XMVECTOR& rayPos, const XMVECTOR& rayDir, XMVECTOR& colPos, XMVECTOR& colNormN, float& colDist);
 	bool PointPlane(const XMVECTOR& vert0, const XMVECTOR& vert1, const XMVECTOR& vert2, const XMVECTOR& pointPos);
 	void RebuildVertexData( void );
 	bool PointOverQuad(XMVECTOR& vPos, XMVECTOR& v0, XMVECTOR& v1, XMVECTOR& v2);
-	void BuildCollisionData(void);
-
-
 
 	XMFLOAT3 GetFaceNormal( int faceIndex, int offset );
 	XMFLOAT3 GetAveragedVertexNormal(int index, int row);
@@ -64,7 +48,6 @@ private:
 	int m_HeightMapVtxCount;
 	int m_HeightMapFaceCount;
 	XMFLOAT4* m_pHeightMap;
-	FaceCollisionData* m_pFaceData;
 	Vertex_Pos3fColour4ubNormal3fTex2f* m_pMapVtxs;
 
 	Application::Shader m_shader;
