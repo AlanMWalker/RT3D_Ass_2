@@ -34,7 +34,7 @@ public:
 	bool RayCollision(XMVECTOR& rayPos, XMVECTOR rayDir, float speed, XMVECTOR& colPos, XMVECTOR& colNormN);
 	int DisableBelowLevel(float fY);
 	int EnableAll(void);
-	void GetFaceVerticesByIndex(int index, XMFLOAT3 vecArray[FACE_NORM_VERTICES_COUNT]);
+	void GetFaceVerticesByIndex(int index, XMFLOAT3 vecArray[FACE_NORM_VERTICES_COUNT]) const;
 	int GetFaceCount() const { return m_HeightMapFaceCount; }
 private:
 
@@ -44,6 +44,7 @@ private:
 		XMFLOAT3 m_v1;
 		XMFLOAT3 m_v2;
 		XMFLOAT3 m_vNormal;
+		XMFLOAT3 m_centre;
 		bool m_bCollided; // Debug colouring
 		bool m_bDisabled;
 	};

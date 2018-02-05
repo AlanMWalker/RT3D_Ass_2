@@ -238,7 +238,6 @@ void Application::HandleUpdate()
 	}
 
 #pragma region DebugTools
-
 	if (IsKeyPressed(' '))
 	{ // slow the simulation down by sleeping when keyboard is pressed 
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -248,13 +247,13 @@ void Application::HandleUpdate()
 	static XMFLOAT3 float3Array[FACE_NORM_VERTICES_COUNT];
 	static int indexInVecArray = 0;
 	static int faceIndex = 0;
-	
+
 	if (IsKeyPressed('U'))
 	{
 		if (!dbU)
 		{
 			dbU = true;
-		
+
 			indexInVecArray = 3;
 			m_pHeightMap->GetFaceVerticesByIndex(faceIndex, float3Array);
 			mSpherePos = XMFLOAT3(float3Array[indexInVecArray].x, 20.0f, float3Array[indexInVecArray].z);
@@ -275,7 +274,7 @@ void Application::HandleUpdate()
 
 	if (IsKeyPressed('I'))
 	{
-		if (dbI)
+		if (!dbI)
 		{
 			dbI = true;
 
@@ -302,7 +301,7 @@ void Application::HandleUpdate()
 		if (!dbD)
 		{
 			dbD = true;
-		
+
 			mSpherePos = XMFLOAT3(float3Array[indexInVecArray].x, 20.0f, float3Array[indexInVecArray].z);
 			mSphereVel = XMFLOAT3(0.0f, 0.2f, 0.0f);
 			mGravityAcc = XMFLOAT3(0.0f, -0.05f, 0.0f);

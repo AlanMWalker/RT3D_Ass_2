@@ -87,11 +87,14 @@ void HeightMap::BuildCollisionData(void)
 				XMStoreFloat3(&m_pFaceData[faceIndex + 0].m_v1, v1);
 				XMStoreFloat3(&m_pFaceData[faceIndex + 0].m_v2, v2);
 				XMStoreFloat3(&m_pFaceData[faceIndex + 0].m_vNormal, vN1);
+				XMStoreFloat3(&m_pFaceData[faceIndex].m_centre, (v0 + v1 + v2) / 3.0f);
 
 				XMStoreFloat3(&m_pFaceData[faceIndex + 1].m_v0, v2);
 				XMStoreFloat3(&m_pFaceData[faceIndex + 1].m_v1, v1);
 				XMStoreFloat3(&m_pFaceData[faceIndex + 1].m_v2, v3);
 				XMStoreFloat3(&m_pFaceData[faceIndex + 1].m_vNormal, vN2);
+				XMStoreFloat3(&m_pFaceData[faceIndex + 1].m_centre, (v1 + v2 + v3) / 3.0f);
+
 
 				faceIndex += 2;
 			}
@@ -100,8 +103,6 @@ void HeightMap::BuildCollisionData(void)
 		}
 	}
 }
-
-
 
 void HeightMap::RebuildVertexData(void)
 {
@@ -203,23 +204,13 @@ int HeightMap::EnableAll(void)
 	return nHidden;
 }
 
-void HeightMap::GetFaceVerticesByIndex(int index, XMFLOAT3 vecArray[FACE_NORM_VERTICES_COUNT])
+void HeightMap::GetFaceVerticesByIndex(int index, XMFLOAT3 vecArray[FACE_NORM_VERTICES_COUNT]) const
 {
 	vecArray[0] = m_pFaceData[index].m_v0;
 	vecArray[1] = m_pFaceData[index].m_v1;
 	vecArray[2] = m_pFaceData[index].m_v2;
-	////vecArray[3] = m_p
-	//GLfloat centerX = (tri[0].x + tri[1].x + tri[2].x) / 3;
-	//GLfloat centerY = (tri[0].y + tri[1].y + tri[2].y) / 3;
-
-	const float centreX = (m_pFaceData[index].m_v0.x + m_pFaceData[index].m_v1.x + m_pFaceData[index].m_v2.x) / 3.0f;
-	const float centreY = (m_pFaceData[index].m_v0.y + m_pFaceData[index].m_v1.y + m_pFaceData[index].m_v2.y) / 3.0f;
-	const float centreZ = (m_pFaceData[index].m_v0.z + m_pFaceData[index].m_v1.z + m_pFaceData[index].m_v2.z) / 3.0f;
-	vecArray[3].x = centreX;
-	vecArray[3].y = centreY;
-	vecArray[3].z = centreZ;
+	vecArray[3] = m_pFaceData[index].m_centre;
 }
-
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -546,7 +537,7 @@ bool HeightMap::RayCollision(XMVECTOR& rayPos, XMVECTOR rayDir, float raySpeed, 
 	{
 		if ((int)frame%m_HeightMapFaceCount == f)
 			m_pFaceData[f].m_bCollided = true;
-}
+	}
 
 	RebuildVertexData();
 
@@ -568,8 +559,8 @@ bool HeightMap::RayCollision(XMVECTOR& rayPos, XMVECTOR rayDir, float raySpeed, 
 				m_pFaceData[f].m_bCollided = true;
 				RebuildVertexData();
 				return true;
-			}
-		}
+}
+}
 	}
 
 	return false;
