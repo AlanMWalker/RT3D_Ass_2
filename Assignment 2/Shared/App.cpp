@@ -17,27 +17,31 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <chrono>
 
 #include "D3DHelpers.h"
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
-App::App():
-m_pD3DDevice(NULL),
-m_pD3DDebug(NULL),
-m_pD3DDeviceContext(NULL),
-m_pD3DRenderTargetView(NULL),
-m_pD3DDepthStencilView(NULL),
-m_softwareD3D(false),
-m_canRender(false),
-m_hWnd(NULL),
-m_pDXGISwapChain(NULL),
-m_pD3DDepthStencilBuffer(NULL),
-m_renderTargetWidth(0),
-m_renderTargetHeight(0),
-m_isInFocus(false),
-m_pStartErrorMessage(NULL)
+float App::m_appBaseDT = 0.016f; // init with dt value for 60 fps
+using namespace std;
+
+App::App() :
+	m_pD3DDevice(NULL),
+	m_pD3DDebug(NULL),
+	m_pD3DDeviceContext(NULL),
+	m_pD3DRenderTargetView(NULL),
+	m_pD3DDepthStencilView(NULL),
+	m_softwareD3D(false),
+	m_canRender(false),
+	m_hWnd(NULL),
+	m_pDXGISwapChain(NULL),
+	m_pD3DDepthStencilBuffer(NULL),
+	m_renderTargetWidth(0),
+	m_renderTargetHeight(0),
+	m_isInFocus(false),
+	m_pStartErrorMessage(NULL)
 {
 }
 
@@ -284,7 +288,7 @@ void App::SetStartErrorMessage(const char *pFmt, ...)
 
 	va_list v;
 
-	va_start(v,pFmt);
+	va_start(v, pFmt);
 
 	_vsnprintf(buf, sizeof buf, pFmt, v);
 	buf[sizeof buf - 1] = 0;
@@ -439,31 +443,31 @@ LRESULT CALLBACK App::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 	if (uMsg == WM_DESTROY)
 		SetWindowLongPtr(hWnd, GWLP_USERDATA, 0);
 
-	switch(uMsg)
+	switch (uMsg)
 	{
 	case WM_ACTIVATEAPP:
-		{
-			pApp->m_isInFocus = !!wParam;
-			dprintf("WM_ACTIVATE: in focus = %d\n", pApp->m_isInFocus);
-		}
-		return 0;
+	{
+		pApp->m_isInFocus = !!wParam;
+		dprintf("WM_ACTIVATE: in focus = %d\n", pApp->m_isInFocus);
+	}
+	return 0;
 
-// 	case WM_ACTIVATE:
-// 		{
-// 			pApp->m_isInFocus = LOWORD(wParam) != WA_INACTIVE;
-// 			dprintf("WM_ACTIVATE: in focus = %d\n", pApp->m_isInFocus);
-// 		}
-// 		return 0;
-		
+	// 	case WM_ACTIVATE:
+	// 		{
+	// 			pApp->m_isInFocus = LOWORD(wParam) != WA_INACTIVE;
+	// 			dprintf("WM_ACTIVATE: in focus = %d\n", pApp->m_isInFocus);
+	// 		}
+	// 		return 0;
+
 	case WM_CLOSE:
-		{
-			// The user closed the window, so we might as well quit.
-			PostQuitMessage(0);
-		}
-		return 0;
+	{
+		// The user closed the window, so we might as well quit.
+		PostQuitMessage(0);
+	}
+	return 0;
 	}
 
-	return DefWindowProc(hWnd,uMsg,wParam,lParam);
+	return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -565,13 +569,25 @@ int Run(App *pApp)
 	QueryPerformanceCounter(&nextUpdate);
 	nextUpdate.QuadPart += oneFrame.QuadPart;
 
+	chrono::time_point<chrono::steady_clock> prevTime = chrono::high_resolution_clock::now();
+	chrono::time_point<chrono::steady_clock> currentTime = prevTime;
+	static bool tickedOnce = false;
+
 	while (DoMessages())
 	{
 		// Wait until the next 60th-of-a-second boundary has
 		// arrived (or been and gone).
 		LARGE_INTEGER now;
+		prevTime = currentTime;
+		currentTime = chrono::high_resolution_clock::now();
 
-		for(;;)
+		if (tickedOnce)
+		{
+			const chrono::milliseconds timeInMs = chrono::duration_cast<chrono::milliseconds>((currentTime - prevTime));
+			pApp->m_appBaseDT = (float)(timeInMs.count()) / 1000.0f;
+		}
+
+		for (;;)
 		{
 			QueryPerformanceCounter(&now);
 
@@ -589,6 +605,11 @@ int Run(App *pApp)
 		pApp->Update();
 
 		pApp->Render();
+
+		if (!tickedOnce)
+		{
+			tickedOnce = true;
+		}
 	}
 
 	pApp->Stop();

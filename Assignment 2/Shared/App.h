@@ -33,7 +33,7 @@ class App
 {
 public:
 	static void RegisterWindowClass();
-
+	static float m_appBaseDT;
 	App();
 	virtual ~App();
 

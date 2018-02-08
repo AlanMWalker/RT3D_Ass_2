@@ -9,6 +9,7 @@
 #include <windows.h>
 #include <d3d11.h>
 
+
 #include "CommonApp.h"
 #include "CommonMesh.h"
 
@@ -26,8 +27,12 @@ class HeightMap;
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
-class Application:
-public CommonApp
+#define NON_SLOWED_DT 0.016f
+#define SLOWED_DT 0.001f
+#define G_VALUE -50.0f
+
+class Application :
+	public CommonApp
 {
 public:
 	static Application* s_pApp;
@@ -44,6 +49,8 @@ private:
 
 	float m_rotationAngle;
 	float m_cameraZ;
+	float m_deltaTime = NON_SLOWED_DT;
+
 	bool m_bWireframe;
 
 	int m_cameraState;

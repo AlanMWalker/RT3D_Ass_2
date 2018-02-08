@@ -1,6 +1,5 @@
 #include "Application.h"
 #include "HeightMap.h"
-
 #include <future>
 
 Application* Application::s_pApp = NULL;
@@ -8,7 +7,6 @@ Application* Application::s_pApp = NULL;
 const int CAMERA_TOP = 0;
 const int CAMERA_ROTATE = 1;
 const int CAMERA_MAX = 2;
-
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -135,7 +133,9 @@ void Application::HandleUpdate()
 		}
 	}
 	else
+	{
 		m_reload = false;
+	}
 
 	static bool dbR = false;
 	if (IsKeyPressed('R'))
@@ -146,7 +146,7 @@ void Application::HandleUpdate()
 			static int dy = 0;
 			mSpherePos = XMFLOAT3((float)((rand() % 14 - 7.0f) - 0.5), 20.0f, (float)((rand() % 14 - 7.0f) - 0.5));
 			mSphereVel = XMFLOAT3(0.0f, 0.2f, 0.0f);
-			mGravityAcc = XMFLOAT3(0.0f, -0.05f, 0.0f);
+			mGravityAcc = XMFLOAT3(0.0f, G_VALUE, 0.0f);
 			mSphereCollided = false;
 			dbR = true;
 		}
@@ -165,7 +165,7 @@ void Application::HandleUpdate()
 			static int dy = 0;
 			mSpherePos = XMFLOAT3(mSpherePos.x, 20.0f, mSpherePos.z);
 			mSphereVel = XMFLOAT3(0.0f, 0.2f, 0.0f);
-			mGravityAcc = XMFLOAT3(0.0f, -0.05f, 0.0f);
+			mGravityAcc = XMFLOAT3(0.0f, G_VALUE, 0.0f);
 			mSphereCollided = false;
 			dbT = true;
 		}
@@ -200,7 +200,7 @@ void Application::HandleUpdate()
 				mSpherePos = XMFLOAT3(((dx - 7.0f) * 2) + 0.5f, 20.0f, ((dy - 7.0f) * 2) + 0.5f);
 
 			mSphereVel = XMFLOAT3(0.0f, 0.2f, 0.0f);
-			mGravityAcc = XMFLOAT3(0.0f, -0.05f, 0.0f);
+			mGravityAcc = XMFLOAT3(0.0f, G_VALUE, 0.0f);
 			mSphereCollided = false;
 			dbN = true;
 		}
@@ -219,8 +219,8 @@ void Application::HandleUpdate()
 		XMVECTOR vSVel = XMLoadFloat3(&mSphereVel);
 		XMVECTOR vSAcc = XMLoadFloat3(&mGravityAcc);
 
-		vSPos += vSVel; // Really important that we add LAST FRAME'S velocity as this was how fast the collision is expecting the ball to move
-		vSVel += vSAcc; // The new velocity gets passed through to the collision so it can base its predictions on our speed NEXT FRAME
+		vSVel += vSAcc * m_deltaTime; // The new velocity gets passed through to the collision so it can base its predictions on our speed NEXT FRAME
+		vSPos += vSVel * m_deltaTime; // Really important that we add LAST FRAME'S velocity as this was how fast the collision is expecting the ball to move
 
 
 		XMStoreFloat3(&mSphereVel, vSVel);
@@ -240,9 +240,14 @@ void Application::HandleUpdate()
 #pragma region DebugTools
 	if (IsKeyPressed(' '))
 	{ // slow the simulation down by sleeping when keyboard is pressed 
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		//std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		m_deltaTime = m_appBaseDT / 6;
 	}
+	else
+	{
+		m_deltaTime = m_appBaseDT;
 
+	}
 	static bool dbU = false, dbI = false, dbD = false;
 	static XMFLOAT3 float3Array[FACE_NORM_VERTICES_COUNT];
 	static int indexInVecArray = 0;
@@ -259,7 +264,7 @@ void Application::HandleUpdate()
 			mSpherePos = XMFLOAT3(float3Array[indexInVecArray].x, 20.0f, float3Array[indexInVecArray].z);
 			mSphereVel = XMFLOAT3(0.0f, 0.2f, 0.0f);
 			mSphereCollided = false;
-			mGravityAcc = XMFLOAT3(0.0f, -0.05f, 0.0f);
+			mGravityAcc = XMFLOAT3(0.0f, G_VALUE, 0.0f);
 
 			if (faceIndex++ >= m_pHeightMap->GetFaceCount())
 			{
@@ -282,7 +287,7 @@ void Application::HandleUpdate()
 			m_pHeightMap->GetFaceVerticesByIndex(faceIndex, float3Array);
 			mSpherePos = XMFLOAT3(float3Array[indexInVecArray].x, 20.0f, float3Array[indexInVecArray].z);
 			mSphereVel = XMFLOAT3(0.0f, 0.2f, 0.0f);
-			mGravityAcc = XMFLOAT3(0.0f, -0.05f, 0.0f);
+			mGravityAcc = XMFLOAT3(0.0f, G_VALUE, 0.0f);
 			mSphereCollided = false;
 
 			if (--faceIndex < 0)
@@ -304,7 +309,7 @@ void Application::HandleUpdate()
 
 			mSpherePos = XMFLOAT3(float3Array[indexInVecArray].x, 20.0f, float3Array[indexInVecArray].z);
 			mSphereVel = XMFLOAT3(0.0f, 0.2f, 0.0f);
-			mGravityAcc = XMFLOAT3(0.0f, -0.05f, 0.0f);
+			mGravityAcc = XMFLOAT3(0.0f, G_VALUE, 0.0f);
 			mSphereCollided = false;
 
 			if (++indexInVecArray >= FACE_NORM_VERTICES_COUNT)
