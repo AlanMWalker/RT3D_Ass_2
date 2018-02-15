@@ -96,6 +96,7 @@
   <ItemGroup>
     <ClInclude Include="Application.h" />
     <ClInclude Include="HeightMap.h" />
+    <ClInclude Include="Macro.h" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="Resources\ExampleShader.hlsl">

@@ -41,8 +41,8 @@ bool Application::HandleStart()
 
 	mSphereCollided = false;
 
-
-
+	m_dynamicBody.pCommonMesh = CommonMesh::NewSphereMesh(this, 1.0f, 16, 16);
+	m_dynamicBody.setPosition(mSpherePos);
 	return true;
 }
 
@@ -59,8 +59,6 @@ void Application::HandleStop()
 	this->CommonApp::HandleStop();
 }
 
-
-
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
@@ -74,6 +72,7 @@ void Application::ReloadShaders()
 
 void Application::HandleUpdate()
 {
+	m_dynamicBody.tick();
 	if (m_cameraState == CAMERA_ROTATE)
 	{
 		if (this->IsKeyPressed('Q') && m_cameraZ > 38.0f)
@@ -122,7 +121,6 @@ void Application::HandleUpdate()
 	{
 		dbW = false;
 	}
-
 
 	if (this->IsKeyPressed(VK_F5))
 	{
@@ -201,7 +199,10 @@ void Application::HandleUpdate()
 
 			mSphereVel = XMFLOAT3(0.0f, 0.2f, 0.0f);
 			mGravityAcc = XMFLOAT3(0.0f, G_VALUE, 0.0f);
-			mSphereCollided = false;
+			mSphereCollided = true;
+			m_dynamicBody.collided = false;
+			m_dynamicBody.setPosition(mSpherePos);
+			m_dynamicBody.setVelocity(XMFLOAT3(0, 0, 0));
 			dbN = true;
 		}
 	}
@@ -236,6 +237,8 @@ void Application::HandleUpdate()
 			XMStoreFloat3(&mSpherePos, vSColPos);
 		}
 	}
+	const float dynamicBodySpeed = XMVectorGetX(XMVector3Length(m_dynamicBody.velocity));
+	m_dynamicBody.collided = m_pHeightMap->RayCollision(m_dynamicBody.position, m_dynamicBody.velocity, dynamicBodySpeed, vSColPos, vSColNorm);
 
 #pragma region DebugTools
 	if (IsKeyPressed(' '))
@@ -367,7 +370,9 @@ void Application::HandleRender()
 	this->SetWorldMatrix(worldMtx);
 	SetDepthStencilState(false, false);
 	if (m_pSphereMesh)
+	{
 		m_pSphereMesh->Draw();
+	}
 
 	SetDepthStencilState(false, true);
 	m_pHeightMap->Draw(m_frameCount);
@@ -375,15 +380,32 @@ void Application::HandleRender()
 	this->SetWorldMatrix(worldMtx);
 	SetDepthStencilState(true, true);
 	if (m_pSphereMesh)
+	{
 		m_pSphereMesh->Draw();
+	}
 
+#pragma region DynamicBodyTesting
+
+	SetWorldMatrix(m_dynamicBody.worldMatrix);
+	SetDepthStencilState(false, false);
+	if (m_dynamicBody.pCommonMesh)
+	{
+		m_dynamicBody.pCommonMesh->Draw();
+	}
+
+	SetWorldMatrix(m_dynamicBody.worldMatrix);
+	SetDepthStencilState(true, true);
+	if (m_dynamicBody.pCommonMesh)
+	{
+		m_dynamicBody.pCommonMesh->Draw();
+	}
+
+#pragma endregion
 	m_frameCount++;
 }
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
-
-
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {

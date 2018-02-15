@@ -12,7 +12,7 @@
 
 #include "CommonApp.h"
 #include "CommonMesh.h"
-
+#include "Macro.h"
 class HeightMap;
 
 //////////////////////////////////////////////////////////////////////
@@ -58,6 +58,57 @@ private:
 	HeightMap* m_pHeightMap;
 
 	CommonMesh *m_pSphereMesh;
+
+	struct DX_ALIGNED DynamicBody
+	{
+		OP_NEW;
+		OP_DEL;
+
+		CommonMesh* pCommonMesh;
+
+		XMVECTOR velocity;
+		XMVECTOR position;
+		//XMVECTOR force; 
+		XMMATRIX worldMatrix;
+		bool collided;
+		DynamicBody()
+			: pCommonMesh(nullptr), collided(false)
+		{
+			velocity = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+			position = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+		}
+
+		void tick()
+		{
+			const float dt = Application::s_pApp->m_appBaseDT;
+
+			//time step integration 
+			//using symplectic euler
+			if (!collided)
+			{
+				velocity += XMVectorSet(0.0, G_VALUE, 0.0f, 0.0f) * dt;
+				position += velocity * dt;
+			}
+
+			XMFLOAT3 float3Pos;
+			XMStoreFloat3(&float3Pos, position);
+
+			worldMatrix = XMMatrixTranslation(XMVectorGetX(position), XMVectorGetY(position), XMVectorGetZ(position));
+		}
+
+		void setPosition(const XMFLOAT3& pos)
+		{
+			position = XMLoadFloat3(&pos);
+		}
+
+		void setVelocity(const XMFLOAT3& vel)
+		{
+			velocity = XMLoadFloat3(&vel);
+		}
+	};
+
+	DynamicBody m_dynamicBody;
+
 	XMFLOAT3 mSpherePos;
 	XMFLOAT3 mSphereVel;
 	float mSphereSpeed;
