@@ -269,7 +269,7 @@ void Application::HandleUpdate()
 	}
 	else
 	{
-		m_deltaTime = m_appBaseDT;
+		m_deltaTime = 1.0f / 60.0f;//m_appBaseDT;
 
 	}
 	static bool dbU = false, dbI = false, dbD = false;

@@ -106,7 +106,7 @@ void DynamicBody::checkHeightMapCollision()
 			setVelocity(m_velocity - impulse);
 
 			//float penetration = radius - XMVectorGetX(XMVector3Length(colPos - m_position));
-			const static float correctionThreshold = 0.01f;
+			const static float correctionThreshold = 0.0001f;
 			const static float correctPercentage = 0.8f;
 			XMVECTOR correction = (max(penetration - correctionThreshold, 0.0f)) * correctPercentage * colNormal;
 			
