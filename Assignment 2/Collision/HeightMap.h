@@ -20,6 +20,8 @@ static const char *const g_aTextureFileNames[] = {
 
 #define FACE_NORM_VERTICES_COUNT 4
 
+//#define REMOVE_CENTRE_TRIANGLES 
+
 static const size_t NUM_TEXTURE_FILES = sizeof g_aTextureFileNames / sizeof g_aTextureFileNames[0];
 
 class HeightMap
@@ -32,6 +34,7 @@ public:
 	bool ReloadShader();
 	void DeleteShader();
 	bool RayCollision(XMVECTOR& rayPos, XMVECTOR rayDir, float speed, XMVECTOR& colPos, XMVECTOR& colNormN);
+	bool SphereCollision(const XMVECTOR& spherePos, float radius, XMVECTOR& colNormN, float& penetration);
 	int DisableBelowLevel(float fY);
 	int EnableAll(void);
 	void GetFaceVerticesByIndex(int index, XMFLOAT3 vecArray[FACE_NORM_VERTICES_COUNT]) const;
@@ -55,7 +58,7 @@ private:
 	void RebuildVertexData(void);
 	bool PointOverQuad(XMVECTOR& vPos, XMVECTOR& v0, XMVECTOR& v1, XMVECTOR& v2);
 	void BuildCollisionData(void);
-
+	XMVECTOR closestPtPointTriangle(const XMVECTOR& pos, int faceIdx);
 
 
 	XMFLOAT3 GetFaceNormal(int faceIndex, int offset);

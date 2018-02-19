@@ -1,5 +1,6 @@
 #include "Application.h"
 #include "HeightMap.h"
+#include "PhysicsWorld.h"
 #include <future>
 
 Application* Application::s_pApp = NULL;
@@ -20,7 +21,6 @@ bool Application::HandleStart()
 	m_bWireframe = true;
 	m_pHeightMap = new HeightMap("Resources/heightmap.bmp", 2.0f, 0.75f);
 
-	m_pSphereMesh = CommonMesh::NewSphereMesh(this, 1.0f, 16, 16);
 	mSpherePos = XMFLOAT3(-14.0, 20.0f, -14.0f);
 	mSphereVel = XMFLOAT3(0.0f, 0.0f, 0.0f);
 	mGravityAcc = XMFLOAT3(0.0f, 0.0f, 0.0f);
@@ -40,8 +40,26 @@ bool Application::HandleStart()
 	m_cameraState = CAMERA_ROTATE;
 
 	mSphereCollided = false;
+	for (int i = 0; i < SPHERE_COUNT; ++i)
+	{
+		//if (i < 2)
+		//{
+		//	m_dynamicBodyPtrs[i] = new DynamicBody(CommonMesh::NewSphereMesh(this, 1.0f, 16, 16), new RayCollider, m_pHeightMap);
+		//}
+		//else
+		{
+			SphereCollider* pSphereCollider = new SphereCollider;
+			pSphereCollider->radius = 1.0f;
+			m_dynamicBodyPtrs[i] = new DynamicBody(CommonMesh::NewSphereMesh(this, 1.0f, 16, 16), pSphereCollider, m_pHeightMap);
+		}
+		m_dynamicBodyPtrs[i]->setPosition(mSpherePos);
 
-
+		if (i > 1)
+		{
+			m_dynamicBodyPtrs[i]->setActivityFlag(false);
+		}
+	}
+	m_pPhysicsWorld = new PhysicsWorld(m_dynamicBodyPtrs);
 
 	return true;
 }
@@ -53,13 +71,13 @@ void Application::HandleStop()
 {
 	delete m_pHeightMap;
 
-	if (m_pSphereMesh)
-		delete m_pSphereMesh;
+	for (auto& pDynamicBody : m_dynamicBodyPtrs)
+	{
+		SAFE_FREE(pDynamicBody);
+	}
 
 	this->CommonApp::HandleStop();
 }
-
-
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -74,6 +92,8 @@ void Application::ReloadShaders()
 
 void Application::HandleUpdate()
 {
+	m_pPhysicsWorld->tick();
+
 	if (m_cameraState == CAMERA_ROTATE)
 	{
 		if (this->IsKeyPressed('Q') && m_cameraZ > 38.0f)
@@ -88,7 +108,6 @@ void Application::HandleUpdate()
 		if (this->IsKeyPressed('P'))
 			m_rotationAngle += .01f;
 	}
-
 
 	static bool dbC = false;
 
@@ -123,7 +142,6 @@ void Application::HandleUpdate()
 		dbW = false;
 	}
 
-
 	if (this->IsKeyPressed(VK_F5))
 	{
 		if (!m_reload)
@@ -146,8 +164,9 @@ void Application::HandleUpdate()
 			static int dy = 0;
 			mSpherePos = XMFLOAT3((float)((rand() % 14 - 7.0f) - 0.5), 20.0f, (float)((rand() % 14 - 7.0f) - 0.5));
 			mSphereVel = XMFLOAT3(0.0f, 0.2f, 0.0f);
-			mGravityAcc = XMFLOAT3(0.0f, G_VALUE, 0.0f);
-			mSphereCollided = false;
+			m_dynamicBodyPtrs[0]->setVelocity(mSphereVel);
+			m_dynamicBodyPtrs[0]->setPosition(mSpherePos);
+			m_dynamicBodyPtrs[0]->resetCollidedFlag();
 			dbR = true;
 		}
 	}
@@ -164,9 +183,10 @@ void Application::HandleUpdate()
 			static int dx = 0;
 			static int dy = 0;
 			mSpherePos = XMFLOAT3(mSpherePos.x, 20.0f, mSpherePos.z);
-			mSphereVel = XMFLOAT3(0.0f, 0.2f, 0.0f);
-			mGravityAcc = XMFLOAT3(0.0f, G_VALUE, 0.0f);
-			mSphereCollided = false;
+			m_dynamicBodyPtrs[0]->resetCollidedFlag();
+			m_dynamicBodyPtrs[0]->setVelocity(XMFLOAT3(0.0f, 0.2f, 0.0f));
+			m_dynamicBodyPtrs[0]->setPosition(mSpherePos);
+
 			dbT = true;
 		}
 	}
@@ -201,7 +221,10 @@ void Application::HandleUpdate()
 
 			mSphereVel = XMFLOAT3(0.0f, 0.2f, 0.0f);
 			mGravityAcc = XMFLOAT3(0.0f, G_VALUE, 0.0f);
-			mSphereCollided = false;
+			mSphereCollided = true;
+			m_dynamicBodyPtrs[0]->resetCollidedFlag();
+			m_dynamicBodyPtrs[0]->setPosition(mSpherePos);
+			m_dynamicBodyPtrs[0]->setVelocity(XMFLOAT3(0, 0, 0));
 			dbN = true;
 		}
 	}
@@ -237,7 +260,8 @@ void Application::HandleUpdate()
 		}
 	}
 
-#pragma region DebugTools
+#pragma region Question 2 Debug Tools
+
 	if (IsKeyPressed(' '))
 	{ // slow the simulation down by sleeping when keyboard is pressed 
 		//std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -245,7 +269,7 @@ void Application::HandleUpdate()
 	}
 	else
 	{
-		m_deltaTime = m_appBaseDT;
+		m_deltaTime = 1.0f / 60.0f;//m_appBaseDT;
 
 	}
 	static bool dbU = false, dbI = false, dbD = false;
@@ -263,8 +287,9 @@ void Application::HandleUpdate()
 			m_pHeightMap->GetFaceVerticesByIndex(faceIndex, float3Array);
 			mSpherePos = XMFLOAT3(float3Array[indexInVecArray].x, 20.0f, float3Array[indexInVecArray].z);
 			mSphereVel = XMFLOAT3(0.0f, 0.2f, 0.0f);
-			mSphereCollided = false;
-			mGravityAcc = XMFLOAT3(0.0f, G_VALUE, 0.0f);
+			m_dynamicBodyPtrs[0]->resetCollidedFlag();
+			m_dynamicBodyPtrs[0]->setVelocity(mSphereVel);
+			m_dynamicBodyPtrs[0]->setPosition(mSpherePos);
 
 			if (faceIndex++ >= m_pHeightMap->GetFaceCount())
 			{
@@ -287,8 +312,9 @@ void Application::HandleUpdate()
 			m_pHeightMap->GetFaceVerticesByIndex(faceIndex, float3Array);
 			mSpherePos = XMFLOAT3(float3Array[indexInVecArray].x, 20.0f, float3Array[indexInVecArray].z);
 			mSphereVel = XMFLOAT3(0.0f, 0.2f, 0.0f);
-			mGravityAcc = XMFLOAT3(0.0f, G_VALUE, 0.0f);
-			mSphereCollided = false;
+			m_dynamicBodyPtrs[0]->setVelocity(mSphereVel);
+			m_dynamicBodyPtrs[0]->setPosition(mSpherePos);
+			m_dynamicBodyPtrs[0]->resetCollidedFlag();
 
 			if (--faceIndex < 0)
 			{
@@ -324,7 +350,51 @@ void Application::HandleUpdate()
 		dbD = false;
 	}
 
+	if (IsKeyPressed('F'))
+	{
+		m_dynamicBodyPtrs[0]->resetCollidedFlag();
+		m_dynamicBodyPtrs[1]->resetCollidedFlag();
+		mSphereVel = XMFLOAT3(0.0f, 0.2f, 0.0f);
+
+		m_dynamicBodyPtrs[0]->setVelocity(mSphereVel);
+		m_dynamicBodyPtrs[1]->setVelocity(mSphereVel);
+
+		XMFLOAT3 returnedVerts[FACE_NORM_VERTICES_COUNT]{ XMFLOAT3(0.0f,0.0f,0.0f) };
+
+		m_pHeightMap->GetFaceVerticesByIndex(0, returnedVerts);
+		m_dynamicBodyPtrs[0]->setPosition(XMFLOAT3(returnedVerts[3].x, 20.0f, returnedVerts[3].z));
+
+		m_pHeightMap->GetFaceVerticesByIndex(m_pHeightMap->GetFaceCount() - 1, returnedVerts);
+		m_dynamicBodyPtrs[1]->setPosition(XMFLOAT3(returnedVerts[3].x, 20.0f, returnedVerts[3].z));
+		m_dynamicBodyPtrs[1]->setActivityFlag(true);
+
+
+	}
+	static bool dbUp = false;
+
+	if (IsKeyPressed(VK_UP))
+	{
+		if (!dbUp)
+		{
+			DynamicBody* pBody = getNextAvailableBody();
+			if (pBody != nullptr)
+			{
+				mSpherePos = XMFLOAT3((float)((rand() % 14 - 7.0f) - 0.5), 20.0f, (float)((rand() % 14 - 7.0f) - 0.5));
+				mSphereVel = XMFLOAT3(0.0f, 0.2f, 0.0f);
+				pBody->setVelocity(mSphereVel);
+				pBody->setPosition(mSpherePos);
+				pBody->resetCollidedFlag();
+				pBody->setActivityFlag(true);
+			}
+			dbUp = true;
+		}
+	}
+	else
+	{
+		dbUp = false;
+	}
 #pragma endregion
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -360,30 +430,55 @@ void Application::HandleRender()
 
 	this->Clear(XMFLOAT4(0.05f, 0.05f, 0.5f, 1.f));
 
-	XMMATRIX worldMtx;
-
-	worldMtx = XMMatrixTranslation(mSpherePos.x, mSpherePos.y, mSpherePos.z);
-
-	this->SetWorldMatrix(worldMtx);
-	SetDepthStencilState(false, false);
-	if (m_pSphereMesh)
-		m_pSphereMesh->Draw();
-
+	this->SetWorldMatrix(m_dynamicBodyPtrs[0]->getWorldMatrix());
 	SetDepthStencilState(false, true);
 	m_pHeightMap->Draw(m_frameCount);
 
-	this->SetWorldMatrix(worldMtx);
-	SetDepthStencilState(true, true);
-	if (m_pSphereMesh)
-		m_pSphereMesh->Draw();
+#pragma region DynamicBodyTesting
+
+	for (auto& pDynamicBody : m_dynamicBodyPtrs)
+	{
+		if (!pDynamicBody->isActive())
+		{
+			continue;
+		}
+
+		SetWorldMatrix(pDynamicBody->getWorldMatrix());
+		SetDepthStencilState(false, false);
+		if (pDynamicBody->getCommonMesh())
+		{
+			pDynamicBody->getCommonMesh()->Draw();
+		}
+
+		SetWorldMatrix(pDynamicBody->getWorldMatrix());
+		SetDepthStencilState(true, true);
+		if (pDynamicBody->getCommonMesh())
+		{
+			pDynamicBody->getCommonMesh()->Draw();
+		}
+	}
+
+#pragma endregion
 
 	m_frameCount++;
 }
 
+DynamicBody* Application::getNextAvailableBody()
+{
+	auto findResult = std::find_if(std::begin(m_dynamicBodyPtrs), std::end(m_dynamicBodyPtrs), [=](DynamicBody* pDynamicBody) -> bool
+	{
+		return !pDynamicBody->isActive();
+	});
+
+	if (findResult == std::end(m_dynamicBodyPtrs))
+	{
+		return nullptr;
+	}
+	return *findResult;
+}
+
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
-
-
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
