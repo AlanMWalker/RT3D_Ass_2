@@ -12,7 +12,7 @@ HeightMap::HeightMap(char* filename, float gridSize, float heightRange)
 	m_pPSCBuffer = NULL;
 	m_pVSCBuffer = NULL;
 
-	m_HeightMapFaceCount = (m_HeightMapLength - 1)*(m_HeightMapWidth - 1) * 2;
+	m_HeightMapFaceCount = (m_HeightMapLength - 1) * (m_HeightMapWidth - 1) * 2;
 
 	m_pFaceData = new FaceCollisionData[m_HeightMapFaceCount];
 
@@ -102,6 +102,68 @@ void HeightMap::BuildCollisionData(void)
 			mapIndex++;
 		}
 	}
+}
+
+XMVECTOR HeightMap::closestPtPointTriangle(const XMVECTOR & pos, int faceIdx)
+{
+	/*
+	Implementation taken from Real Time 3D Collision Detection book.
+	*/
+	XMVECTOR v0, v1, v2;
+	v0 = XMLoadFloat3(&m_pFaceData[faceIdx].m_v0);
+	v1 = XMLoadFloat3(&m_pFaceData[faceIdx].m_v1);
+	v2 = XMLoadFloat3(&m_pFaceData[faceIdx].m_v2);
+
+	XMVECTOR vA, vB, vC;
+	vA = v1 - v0;
+	vB = v2 - v0;
+	vC = v2 - v1;
+
+	float snom = XMVectorGetX(XMVector3Dot(pos - v0, vA));
+	float sdenom = XMVectorGetX(XMVector3Dot(pos - v1, v0 - v1));
+
+	float tnom = XMVectorGetX(XMVector3Dot(pos - v0, vB));
+	float tdenom = XMVectorGetX(XMVector3Dot(pos - v2, v0 - v2));
+
+	if (snom <= 0.0f && tnom <= 0.0f)
+		return v0;
+
+	float unom = XMVectorGetX(XMVector3Dot(pos - v1, vC));
+	float udenom = XMVectorGetX(XMVector3Dot(pos - v2, v1 - v2));
+
+	if (sdenom <= 0.0f && unom <= 0.0f)
+		return v1;
+
+	if (tdenom <= 0.0f && udenom <= 0)
+		return v2;
+
+	XMVECTOR n = XMVector3Cross(v1 - v0, v2 - v0);
+	float vc = XMVectorGetX(XMVector3Dot(n, XMVector3Cross(v0 - pos, v1 - pos)));
+
+	if (vc <= 0 && snom >= 0.0f && sdenom >= 0.0f)
+	{
+		return v0 + snom / (snom + sdenom)*vA;
+	}
+
+	float va = XMVectorGetX(XMVector3Dot(n, XMVector3Cross(v1 - pos, v2 - pos)));
+
+	if (va <= 0.0f && unom >= 0.0f && udenom >= 0.0f)
+	{
+		return v1 + unom / (unom + udenom) * vC;
+	}
+
+	float vb = XMVectorGetX(XMVector3Dot(n, XMVector3Cross(v2 - pos, v0 - pos)));
+
+	if (vb <= 0.0f && tnom >= 0.0f && tdenom >= 0.0f)
+	{
+		return v0 + tnom / (tnom + tdenom) * vB;
+	}
+
+	float u = va / (va + vb + vc);
+	float v = vb / (va + vb + vc);
+	float w = 1.0f - u - v;
+
+	return u * v0 + v*v1 + w*v2;
 }
 
 void HeightMap::RebuildVertexData(void)
@@ -559,10 +621,44 @@ bool HeightMap::RayCollision(XMVECTOR& rayPos, XMVECTOR rayDir, float raySpeed, 
 				m_pFaceData[f].m_bCollided = true;
 				RebuildVertexData();
 				return true;
-}
-}
+			}
+		}
 	}
 
+	return false;
+}
+
+bool HeightMap::SphereCollision(const XMVECTOR & spherePos, float radius, XMVECTOR & colNormN, float& penetration)
+{
+	for (int f = 0; f < m_HeightMapFaceCount; ++f)
+	{
+		m_pFaceData[f].m_bCollided = false;
+	}
+
+	XMVECTOR vNormal, vVert;
+
+	//Current : Brute force ( slow )
+	for (int f = 0; f < m_HeightMapFaceCount; ++f)
+	{
+		if (m_pFaceData[f].m_bDisabled)
+		{
+			continue;
+		}
+
+		XMVECTOR closestPoint = closestPtPointTriangle(spherePos, f); // find closest point on triangle to centre of sphere
+		XMVECTOR v = closestPoint - spherePos; // get vector from spehre to closest point
+
+		const float distSquared = XMVectorGetX(XMVector3Dot(v, v)); // dot product this vector with itself to get the distance squared
+		if (distSquared <= radius * radius) // if the distance squared is less than or equal to the radius
+											// then a collision occured
+		{
+			colNormN = XMLoadFloat3(&m_pFaceData[f].m_vNormal);
+			penetration = radius - sqrt(distSquared);
+			m_pFaceData[f].m_bCollided = true;
+			RebuildVertexData();
+			return true;
+		}
+	}
 	return false;
 }
 

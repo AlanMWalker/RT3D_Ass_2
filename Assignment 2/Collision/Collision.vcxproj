@@ -91,12 +91,16 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
+    <ClCompile Include="DynamicBody.cpp" />
     <ClCompile Include="HeightMap.cpp" />
+    <ClCompile Include="PhysicsWorld.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
+    <ClInclude Include="DynamicBody.h" />
     <ClInclude Include="HeightMap.h" />
     <ClInclude Include="Macro.h" />
+    <ClInclude Include="PhysicsWorld.h" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="Resources\ExampleShader.hlsl">

@@ -13,6 +13,10 @@
 #include "CommonApp.h"
 #include "CommonMesh.h"
 #include "Macro.h"
+#include "DynamicBody.h"
+
+#include <array>
+
 class HeightMap;
 
 //////////////////////////////////////////////////////////////////////
@@ -31,17 +35,26 @@ class HeightMap;
 #define SLOWED_DT 0.001f
 #define G_VALUE -50.0f
 
+#define SPHERE_COUNT 100
+
+class PhysicsWorld;
+
 class Application :
 	public CommonApp
 {
 public:
 	static Application* s_pApp;
+	float m_deltaTime = NON_SLOWED_DT;
+
 protected:
 	bool HandleStart();
 	void HandleStop();
 	void HandleUpdate();
 	void HandleRender();
+
 private:
+
+	DynamicBody* getNextAvailableBody();
 
 	float m_frameCount;
 
@@ -49,65 +62,15 @@ private:
 
 	float m_rotationAngle;
 	float m_cameraZ;
-	float m_deltaTime = NON_SLOWED_DT;
 
 	bool m_bWireframe;
 
 	int m_cameraState;
 
 	HeightMap* m_pHeightMap;
+	PhysicsWorld* m_pPhysicsWorld;
 
-	CommonMesh *m_pSphereMesh;
-
-	struct DX_ALIGNED DynamicBody
-	{
-		OP_NEW;
-		OP_DEL;
-
-		CommonMesh* pCommonMesh;
-
-		XMVECTOR velocity;
-		XMVECTOR position;
-		//XMVECTOR force; 
-		XMMATRIX worldMatrix;
-		bool collided;
-		DynamicBody()
-			: pCommonMesh(nullptr), collided(false)
-		{
-			velocity = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-			position = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-		}
-
-		void tick()
-		{
-			const float dt = Application::s_pApp->m_appBaseDT;
-
-			//time step integration 
-			//using symplectic euler
-			if (!collided)
-			{
-				velocity += XMVectorSet(0.0, G_VALUE, 0.0f, 0.0f) * dt;
-				position += velocity * dt;
-			}
-
-			XMFLOAT3 float3Pos;
-			XMStoreFloat3(&float3Pos, position);
-
-			worldMatrix = XMMatrixTranslation(XMVectorGetX(position), XMVectorGetY(position), XMVectorGetZ(position));
-		}
-
-		void setPosition(const XMFLOAT3& pos)
-		{
-			position = XMLoadFloat3(&pos);
-		}
-
-		void setVelocity(const XMFLOAT3& vel)
-		{
-			velocity = XMLoadFloat3(&vel);
-		}
-	};
-
-	DynamicBody m_dynamicBody;
+	DynamicBody* m_dynamicBodyPtrs[SPHERE_COUNT];
 
 	XMFLOAT3 mSpherePos;
 	XMFLOAT3 mSphereVel;
