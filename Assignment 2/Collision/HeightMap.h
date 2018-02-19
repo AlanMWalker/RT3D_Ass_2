@@ -20,6 +20,8 @@ static const char *const g_aTextureFileNames[] = {
 
 #define FACE_NORM_VERTICES_COUNT 4
 
+//#define REMOVE_CENTRE_TRIANGLES 
+
 static const size_t NUM_TEXTURE_FILES = sizeof g_aTextureFileNames / sizeof g_aTextureFileNames[0];
 
 class HeightMap

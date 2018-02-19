@@ -35,13 +35,52 @@ HeightMap::HeightMap(char* filename, float gridSize, float heightRange)
 	m_pHeightMapBuffer = CreateDynamicVertexBuffer(Application::s_pApp->GetDevice(), sizeof Vertex_Pos3fColour4ubNormal3fTex2f * m_HeightMapVtxCount, 0);
 
 	BuildCollisionData();
+
+#ifdef REMOVE_CENTRE_TRIANGLES
+	{
+		int halfFaceCount = m_HeightMapFaceCount / 2;
+		int facePerRow = 32;
+
+		//remove centre squares row
+		m_pFaceData[halfFaceCount].m_bDisabled = true;
+		m_pFaceData[halfFaceCount - 1].m_bDisabled = true;
+		m_pFaceData[halfFaceCount - 2].m_bDisabled = true;
+		m_pFaceData[halfFaceCount - 3].m_bDisabled = true;
+
+		m_pFaceData[halfFaceCount + 1].m_bDisabled = true;
+		m_pFaceData[halfFaceCount + 2].m_bDisabled = true;
+
+		//move to one row before centre
+		halfFaceCount -= facePerRow;
+
+		//remove row above centre pos 
+		m_pFaceData[halfFaceCount].m_bDisabled = true;
+		m_pFaceData[halfFaceCount - 1].m_bDisabled = true;
+
+		m_pFaceData[halfFaceCount + 1].m_bDisabled = true;
+		m_pFaceData[halfFaceCount + 2].m_bDisabled = true;
+		m_pFaceData[halfFaceCount + 3].m_bDisabled = true;
+		m_pFaceData[halfFaceCount + 4].m_bDisabled = true;
+
+		//go one row after centre
+		halfFaceCount += 2 * facePerRow;
+
+		m_pFaceData[halfFaceCount].m_bDisabled = true;
+		m_pFaceData[halfFaceCount - 1].m_bDisabled = true;
+
+		m_pFaceData[halfFaceCount - 2].m_bDisabled = true;
+		m_pFaceData[halfFaceCount - 3].m_bDisabled = true;
+		m_pFaceData[halfFaceCount - 4].m_bDisabled = true;
+		m_pFaceData[halfFaceCount - 5].m_bDisabled = true;
+
+	}
+#endif 
 	RebuildVertexData();
 
 	for (size_t i = 0; i < NUM_TEXTURE_FILES; ++i)
 	{
 		LoadTextureFromFile(Application::s_pApp->GetDevice(), g_aTextureFileNames[i], &m_pTextures[i], &m_pTextureViews[i], &m_pSamplerState);
 	}
-
 
 	ReloadShader(); // This compiles the shader
 }
@@ -599,7 +638,7 @@ bool HeightMap::RayCollision(XMVECTOR& rayPos, XMVECTOR rayDir, float raySpeed, 
 	{
 		if ((int)frame%m_HeightMapFaceCount == f)
 			m_pFaceData[f].m_bCollided = true;
-	}
+}
 
 	RebuildVertexData();
 
