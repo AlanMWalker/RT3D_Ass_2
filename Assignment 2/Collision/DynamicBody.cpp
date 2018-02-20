@@ -104,26 +104,26 @@ void DynamicBody::checkHeightMapCollision()
 
 			setVelocity(m_velocity - impulse);
 
-			//relativeVel = -m_velocity;
-			//XMVECTOR t = relativeVel - (colNormal * XMVectorGetX(XMVector3Dot(colNormal, relativeVel)));
-			//t = XMVector3Normalize(t);
-			//
-			//const float staticFric = 0.1f;
-			//const float dynFric = 0.2f;
-			//
-			//float jTangent = -XMVectorGetX(XMVector3Dot(relativeVel, t));
-			//
-			//if (jTangent != 0.0f)
-			//{
-			//	if (fabs(jTangent) < j * staticFric)
-			//	{
-			//		setVelocity(m_velocity - (t* jTangent));
-			//	}
-			//	else
-			//	{
-			//		setVelocity(m_velocity - (t * -j * dynFric));
-			//	}
-			//}
+			relativeVel = -m_velocity;
+			XMVECTOR t = relativeVel - (colNormal * XMVectorGetX(XMVector3Dot(colNormal, relativeVel)));
+			t = XMVector3Normalize(t);
+
+			const float staticFric = 0.1f;
+			const float dynFric = 0.2f;
+
+			float jTangent = -XMVectorGetX(XMVector3Dot(relativeVel, t));
+
+			if (jTangent != 0.0f)
+			{
+				if (fabs(jTangent) < j * staticFric)
+				{
+					setVelocity(m_velocity + (t* jTangent));
+				}
+				else
+				{
+					setVelocity(m_velocity + (t * -j * dynFric));
+				}
+			}
 			XMVECTOR correction = (max(penetration - Application::CollisionThreshold, 0.0f)) * Application::CollisionPercentage* colNormal;
 
 			m_position += correction;

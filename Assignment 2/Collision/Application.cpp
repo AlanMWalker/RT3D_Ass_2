@@ -5,8 +5,8 @@
 
 Application* Application::s_pApp = NULL;
 
-const float Application::CollisionThreshold = 0.000000001f;
-const float Application::CollisionPercentage = 0.8f;
+const float Application::CollisionThreshold = 0.001f;
+const float Application::CollisionPercentage = 0.99f;
 
 const int CAMERA_TOP = 0;
 const int CAMERA_ROTATE = 1;
