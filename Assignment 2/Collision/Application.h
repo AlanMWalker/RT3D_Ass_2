@@ -45,7 +45,8 @@ class Application :
 public:
 	static Application* s_pApp;
 	float m_deltaTime = NON_SLOWED_DT;
-
+	static const float CollisionThreshold;
+	static const float CollisionPercentage;
 protected:
 	bool HandleStart();
 	void HandleStop();

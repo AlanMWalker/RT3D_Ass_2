@@ -5,6 +5,9 @@
 
 Application* Application::s_pApp = NULL;
 
+const float Application::CollisionThreshold = 0.000000001f;
+const float Application::CollisionPercentage = 0.8f;
+
 const int CAMERA_TOP = 0;
 const int CAMERA_ROTATE = 1;
 const int CAMERA_MAX = 2;
@@ -393,6 +396,33 @@ void Application::HandleUpdate()
 	{
 		dbUp = false;
 	}
+
+	static bool enableBase = false;
+	static bool dbH = false;
+
+	if (IsKeyPressed('H'))
+	{
+		if (!dbH)
+		{
+			dbH = true;
+			if (enableBase)
+			{
+				const int hiddenCount = m_pHeightMap->EnableAll();
+				dprintf("Hidden count: %d\n", hiddenCount);
+			}
+			else
+			{
+				const int hiddenCount = m_pHeightMap->DisableBelowLevel(Y_DISABLE_VALUE);
+				dprintf("Hidden count: %d\n", hiddenCount);
+			}
+			enableBase = !enableBase;
+		}
+	}
+	else
+	{
+		dbH = false;
+	}
+
 #pragma endregion
 
 }

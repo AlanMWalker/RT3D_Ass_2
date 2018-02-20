@@ -20,13 +20,14 @@ static const char *const g_aTextureFileNames[] = {
 
 #define FACE_NORM_VERTICES_COUNT 4
 
-//#define REMOVE_CENTRE_TRIANGLES 
+#define Y_DISABLE_VALUE 4.0f
 
 static const size_t NUM_TEXTURE_FILES = sizeof g_aTextureFileNames / sizeof g_aTextureFileNames[0];
 
 class HeightMap
 {
 public:
+	
 	HeightMap(char* filename, float gridSize, float heightRange);
 	~HeightMap();
 
@@ -39,6 +40,7 @@ public:
 	int EnableAll(void);
 	void GetFaceVerticesByIndex(int index, XMFLOAT3 vecArray[FACE_NORM_VERTICES_COUNT]) const;
 	int GetFaceCount() const { return m_HeightMapFaceCount; }
+
 private:
 
 	struct FaceCollisionData
@@ -60,8 +62,9 @@ private:
 	void BuildCollisionData(void);
 	XMVECTOR closestPtPointTriangle(const XMVECTOR& pos, int faceIdx);
 
-
+	// Marked for removal 
 	XMFLOAT3 GetFaceNormal(int faceIndex, int offset);
+	// Marked for removal 
 	XMFLOAT3 GetAveragedVertexNormal(int index, int row);
 
 	ID3D11Buffer *m_pHeightMapBuffer;

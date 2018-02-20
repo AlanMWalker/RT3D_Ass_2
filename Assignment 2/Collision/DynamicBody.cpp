@@ -30,8 +30,9 @@ void DynamicBody::updateDynamicBody(float dt)
 		return;
 	}
 
-	m_velocity += dt * XMVectorSet(0.0f, G_VALUE, 0.0f, 0.0f); // step acceleration and apply this change to the velocity 
+	m_velocity += (dt / 2.0f) * XMVectorSet(0.0f, G_VALUE, 0.0f, 0.0f); // step acceleration and apply this change to the velocity 
 	m_position += dt * m_velocity; // step velocity and calculate the change in position and apply this translation to the current position 
+	m_velocity += (dt / 2.0f) * XMVectorSet(0.0f, G_VALUE, 0.0f, 0.0f); // step acceleration and apply this change to the velocity 
 
 	checkHeightMapCollision();
 	m_worldMatrix = XMMatrixTranslation(XMVectorGetX(m_position), XMVectorGetY(m_position), XMVectorGetZ(m_position));
@@ -59,6 +60,8 @@ void DynamicBody::setVelocity(const DirectX::XMFLOAT3 & vel)
 
 void DynamicBody::checkHeightMapCollision()
 {
+	float e = 0.25f;
+
 	switch (m_pBaseCollider->colliderType)
 	{
 
@@ -71,7 +74,6 @@ void DynamicBody::checkHeightMapCollision()
 		m_bCollided = m_pHeightMap->RayCollision(m_position, m_velocity, XMVectorGetX(XMVector3Length(m_velocity)), colPos, colNormal);
 		if (m_bCollided)
 		{
-			float e = 0.9f;
 			setPosition(colPos);
 
 			XMVECTOR relativeVel = -m_velocity;
@@ -90,13 +92,10 @@ void DynamicBody::checkHeightMapCollision()
 		XMVECTOR colNormal;
 		float radius = static_cast<SphereCollider*>(m_pBaseCollider)->radius;
 		float penetration;
-		//m_bCollided = m_pHeightMap->RayCollision(m_position, m_velocity, radius, colPos, colNormal);
-		m_bCollided = m_pHeightMap->SphereCollision(m_position, radius, colNormal,penetration);
+		m_bCollided = m_pHeightMap->SphereCollision(m_position, radius, colNormal, penetration);
 
 		if (m_bCollided)
 		{
-			float e = 0.2f;
-			//setPosition(colPos);
 
 			XMVECTOR relativeVel = -m_velocity;
 			const float velAlongNormal = XMVectorGetX(XMVector3Dot(relativeVel, colNormal));
@@ -105,11 +104,28 @@ void DynamicBody::checkHeightMapCollision()
 
 			setVelocity(m_velocity - impulse);
 
-			//float penetration = radius - XMVectorGetX(XMVector3Length(colPos - m_position));
-			const static float correctionThreshold = 0.0001f;
-			const static float correctPercentage = 0.8f;
-			XMVECTOR correction = (max(penetration - correctionThreshold, 0.0f)) * correctPercentage * colNormal;
-			
+			//relativeVel = -m_velocity;
+			//XMVECTOR t = relativeVel - (colNormal * XMVectorGetX(XMVector3Dot(colNormal, relativeVel)));
+			//t = XMVector3Normalize(t);
+			//
+			//const float staticFric = 0.1f;
+			//const float dynFric = 0.2f;
+			//
+			//float jTangent = -XMVectorGetX(XMVector3Dot(relativeVel, t));
+			//
+			//if (jTangent != 0.0f)
+			//{
+			//	if (fabs(jTangent) < j * staticFric)
+			//	{
+			//		setVelocity(m_velocity - (t* jTangent));
+			//	}
+			//	else
+			//	{
+			//		setVelocity(m_velocity - (t * -j * dynFric));
+			//	}
+			//}
+			XMVECTOR correction = (max(penetration - Application::CollisionThreshold, 0.0f)) * Application::CollisionPercentage* colNormal;
+
 			m_position += correction;
 			m_bCollided = false;
 

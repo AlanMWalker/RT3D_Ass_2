@@ -101,12 +101,12 @@ bool PhysicsWorld::checkIntersection(CollisionPOD & collPod)
 void PhysicsWorld::resolveImpulse(CollisionPOD & collPOD)
 {
 	//DynamicBody
-	float e = 0.15f;
-	//setPosition(colPos);
+	const float e = 0.2f;
+	const float invMassSum = collPOD.pBodyA->getInverseMass() + collPOD.pBodyB->getInverseMass();
 
 	XMVECTOR relativeVel = collPOD.pBodyB->getVelocity() - collPOD.pBodyA->getVelocity();
 	const float velAlongNormal = XMVectorGetX(XMVector3Dot(relativeVel, collPOD.normal));
-	const float j = -(1 + e) * velAlongNormal;
+	const float j = (-(1 + e) * velAlongNormal) / invMassSum;
 	XMVECTOR impulse = j * collPOD.normal;
 
 	collPOD.pBodyA->setVelocity(collPOD.pBodyA->getVelocity() - impulse);
@@ -118,7 +118,10 @@ void PhysicsWorld::correctPosition(CollisionPOD & collPod)
 	////float penetration = radius - XMVectorGetX(XMVector3Length(colPos - m_position));
 	const static float correctionThreshold = 0.01f;
 	const static float correctPercentage = 0.6f;
-	XMVECTOR correction = (max(collPod.penetration - correctionThreshold, 0.0f)) * correctPercentage * collPod.normal;
+	const float invMassA = collPod.pBodyA->getInverseMass();
+	const float invMassB = collPod.pBodyB->getInverseMass();
+	XMVECTOR correction = ((max(collPod.penetration - Application::CollisionThreshold, 0.0f)) / (invMassA + invMassB))
+		* Application::CollisionPercentage * collPod.normal;
 
 	collPod.pBodyA->setPosition(collPod.pBodyA->getPosition() - correction);
 	collPod.pBodyB->setPosition(collPod.pBodyB->getPosition() + correction);

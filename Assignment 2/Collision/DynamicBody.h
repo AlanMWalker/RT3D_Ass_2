@@ -75,6 +75,10 @@ public:
 
 	bool isActive() const { return m_bIsActive; }
 
+	float getMass() const { return m_mass; }
+
+	float getInverseMass() const { return m_invMass; }
+
 private:
 
 	void checkHeightMapCollision();
@@ -90,6 +94,9 @@ private:
 
 	bool m_bCollided;
 	bool m_bIsActive;
+
+	float m_mass = 1.0f;
+	float m_invMass = 1.0f / m_mass;
 };
 
 #endif // !DYNAMIC_BODY_H
