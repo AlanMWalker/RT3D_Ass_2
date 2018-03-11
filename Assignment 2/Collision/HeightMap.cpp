@@ -280,7 +280,9 @@ void HeightMap::GetFaceVerticesByIndex(int index, XMFLOAT3 vecArray[FACE_NORM_VE
 HeightMap::~HeightMap()
 {
 	if (m_pHeightMap)
+	{
 		delete m_pHeightMap;
+	}
 
 	for (size_t i = 0; i < NUM_TEXTURE_FILES; ++i)
 	{

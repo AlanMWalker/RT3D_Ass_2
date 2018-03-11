@@ -44,10 +44,15 @@ class Application :
 {
 public:
 	static Application* s_pApp;
+
 	float m_deltaTime = NON_SLOWED_DT;
 	static const float CollisionThreshold;
 	static const float CollisionPercentage;
+
+	HeightMap* GetHeightmap() { return m_pCurrentHeightmap; }
+
 protected:
+
 	bool HandleStart();
 	void HandleStop();
 	void HandleUpdate();
@@ -55,7 +60,7 @@ protected:
 
 private:
 
-	DynamicBody* getNextAvailableBody();
+	DynamicBody * getNextAvailableBody();
 
 	float m_frameCount;
 
@@ -68,7 +73,9 @@ private:
 
 	int m_cameraState;
 
-	HeightMap* m_pHeightMap;
+	HeightMap* m_heightMapPtrs[2] = { nullptr, nullptr };
+	HeightMap* m_pCurrentHeightmap = nullptr;
+
 	PhysicsWorld* m_pPhysicsWorld;
 
 	DynamicBody* m_dynamicBodyPtrs[SPHERE_COUNT];

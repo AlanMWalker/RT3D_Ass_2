@@ -49,7 +49,7 @@ class DX_ALIGNED DynamicBody
 {
 public:
 
-	DynamicBody(CommonMesh* pCommonMesh, ColliderBase* pBaseCollider, HeightMap* pHeightMap);
+	DynamicBody(CommonMesh* pCommonMesh, ColliderBase* pBaseCollider);
 	~DynamicBody();
 
 	OP_NEW;

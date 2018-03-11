@@ -7,11 +7,10 @@ using namespace DirectX;
 
 // Dynamic Body \\
 
-DynamicBody::DynamicBody(CommonMesh* pCommonMesh, ColliderBase* pCollider, HeightMap* pHeightMap)
-	: m_pCommonMesh(pCommonMesh), m_pHeightMap(pHeightMap), m_bCollided(false), m_bIsActive(true), m_pBaseCollider(pCollider)
+DynamicBody::DynamicBody(CommonMesh* pCommonMesh, ColliderBase* pCollider)
+	: m_pCommonMesh(pCommonMesh), m_bCollided(false), m_bIsActive(true), m_pBaseCollider(pCollider)
 {
 	assert(pCommonMesh);
-	assert(pHeightMap);
 	assert(pCollider);
 	setVelocity(XMFLOAT3(0, 0, 0));
 	setPosition(XMFLOAT3(0, 0, 0));
@@ -60,7 +59,9 @@ void DynamicBody::setVelocity(const DirectX::XMFLOAT3 & vel)
 
 void DynamicBody::checkHeightMapCollision()
 {
-	float e = 0.25f;
+	float e = 0.6f;
+	HeightMap* pCurrentHeightmap = Application::s_pApp->GetHeightmap();
+	assert(pCurrentHeightmap);
 
 	switch (m_pBaseCollider->colliderType)
 	{
@@ -71,7 +72,7 @@ void DynamicBody::checkHeightMapCollision()
 		XMVECTOR colPos;
 		XMVECTOR colNormal;
 
-		m_bCollided = m_pHeightMap->RayCollision(m_position, m_velocity, XMVectorGetX(XMVector3Length(m_velocity)), colPos, colNormal);
+		m_bCollided = pCurrentHeightmap->RayCollision(m_position, m_velocity, XMVectorGetX(XMVector3Length(m_velocity)), colPos, colNormal);
 		if (m_bCollided)
 		{
 			setPosition(colPos);
@@ -92,7 +93,7 @@ void DynamicBody::checkHeightMapCollision()
 		XMVECTOR colNormal;
 		float radius = static_cast<SphereCollider*>(m_pBaseCollider)->radius;
 		float penetration;
-		m_bCollided = m_pHeightMap->SphereCollision(m_position, radius, colNormal, penetration);
+		m_bCollided = pCurrentHeightmap->SphereCollision(m_position, radius, colNormal, penetration);
 
 		if (m_bCollided)
 		{
