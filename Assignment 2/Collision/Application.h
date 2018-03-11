@@ -9,8 +9,13 @@
 #include <windows.h>
 #include <d3d11.h>
 
+
 #include "CommonApp.h"
 #include "CommonMesh.h"
+#include "Macro.h"
+#include "DynamicBody.h"
+
+#include <array>
 
 class HeightMap;
 
@@ -26,17 +31,31 @@ class HeightMap;
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
-class Application:
-public CommonApp
+#define NON_SLOWED_DT 0.016f
+#define SLOWED_DT 0.001f
+#define G_VALUE -50.0f
+
+#define SPHERE_COUNT 100
+
+class PhysicsWorld;
+
+class Application :
+	public CommonApp
 {
 public:
 	static Application* s_pApp;
+	float m_deltaTime = NON_SLOWED_DT;
+	static const float CollisionThreshold;
+	static const float CollisionPercentage;
 protected:
 	bool HandleStart();
 	void HandleStop();
 	void HandleUpdate();
 	void HandleRender();
+
 private:
+
+	DynamicBody* getNextAvailableBody();
 
 	float m_frameCount;
 
@@ -44,13 +63,16 @@ private:
 
 	float m_rotationAngle;
 	float m_cameraZ;
+
 	bool m_bWireframe;
 
 	int m_cameraState;
 
 	HeightMap* m_pHeightMap;
+	PhysicsWorld* m_pPhysicsWorld;
 
-	CommonMesh *m_pSphereMesh;
+	DynamicBody* m_dynamicBodyPtrs[SPHERE_COUNT];
+
 	XMFLOAT3 mSpherePos;
 	XMFLOAT3 mSphereVel;
 	float mSphereSpeed;
