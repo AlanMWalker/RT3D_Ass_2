@@ -70,7 +70,6 @@ public:
 
 	CommonMesh* const getCommonMesh() { return m_pCommonMesh; }
 	ColliderBase* const getColliderBase() { return m_pBaseCollider; }
-	void resetCollidedFlag() { m_bCollided = false; }
 	void setActivityFlag(bool bIsActive) { m_bIsActive = bIsActive; }
 
 	bool isActive() const { return m_bIsActive; }
@@ -92,7 +91,6 @@ private:
 	HeightMap* m_pHeightMap;
 	ColliderBase* m_pBaseCollider;
 
-	bool m_bCollided;
 	bool m_bIsActive;
 
 	float m_mass = 1.0f;

@@ -8,7 +8,7 @@ using namespace DirectX;
 // Dynamic Body \\
 
 DynamicBody::DynamicBody(CommonMesh* pCommonMesh, ColliderBase* pCollider)
-	: m_pCommonMesh(pCommonMesh), m_bCollided(false), m_bIsActive(true), m_pBaseCollider(pCollider)
+	: m_pCommonMesh(pCommonMesh), m_bIsActive(true), m_pBaseCollider(pCollider)
 {
 	assert(pCommonMesh);
 	assert(pCollider);
@@ -24,7 +24,7 @@ DynamicBody::~DynamicBody()
 
 void DynamicBody::updateDynamicBody(float dt)
 {
-	if (m_bCollided || !m_bIsActive)
+	if (!m_bIsActive)
 	{
 		return;
 	}
@@ -72,8 +72,8 @@ void DynamicBody::checkHeightMapCollision()
 		XMVECTOR colPos;
 		XMVECTOR colNormal;
 
-		m_bCollided = pCurrentHeightmap->RayCollision(m_position, m_velocity, XMVectorGetX(XMVector3Length(m_velocity)), colPos, colNormal);
-		if (m_bCollided)
+		const bool bCollided = pCurrentHeightmap->RayCollision(m_position, m_velocity, XMVectorGetX(XMVector3Length(m_velocity)), colPos, colNormal);
+		if (bCollided)
 		{
 			setPosition(colPos);
 
@@ -83,7 +83,6 @@ void DynamicBody::checkHeightMapCollision()
 			XMVECTOR impulse = j * colNormal;
 
 			setVelocity(m_velocity - impulse);
-			m_bCollided = false;
 		}
 		break;
 	}
@@ -93,13 +92,18 @@ void DynamicBody::checkHeightMapCollision()
 		XMVECTOR colNormal;
 		float radius = static_cast<SphereCollider*>(m_pBaseCollider)->radius;
 		float penetration;
-		m_bCollided = pCurrentHeightmap->SphereCollision(m_position, radius, colNormal, penetration);
+		const bool bCollided = pCurrentHeightmap->SphereCollision(m_position, radius, colNormal, penetration);
 
-		if (m_bCollided)
+		if (bCollided)
 		{
 
 			XMVECTOR relativeVel = -m_velocity;
 			const float velAlongNormal = XMVectorGetX(XMVector3Dot(relativeVel, colNormal));
+			if (velAlongNormal < 0)
+			{
+
+				return;
+			}
 			const float j = -(1 + e) * velAlongNormal;
 			XMVECTOR impulse = j * colNormal;
 
@@ -128,8 +132,6 @@ void DynamicBody::checkHeightMapCollision()
 			XMVECTOR correction = (max(penetration - Application::CollisionThreshold, 0.0f)) * Application::CollisionPercentage* colNormal;
 
 			m_position += correction;
-			m_bCollided = false;
-
 		}
 		break;
 	}

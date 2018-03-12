@@ -179,7 +179,6 @@ void Application::HandleUpdate()
 			mSphereVel = XMFLOAT3(0.0f, 0.2f, 0.0f);
 			m_dynamicBodyPtrs[0]->setVelocity(mSphereVel);
 			m_dynamicBodyPtrs[0]->setPosition(mSpherePos);
-			m_dynamicBodyPtrs[0]->resetCollidedFlag();
 			dbR = true;
 		}
 	}
@@ -196,7 +195,6 @@ void Application::HandleUpdate()
 			static int dx = 0;
 			static int dy = 0;
 			mSpherePos = XMFLOAT3(mSpherePos.x, 20.0f, mSpherePos.z);
-			m_dynamicBodyPtrs[0]->resetCollidedFlag();
 			m_dynamicBodyPtrs[0]->setVelocity(XMFLOAT3(0.0f, 0.2f, 0.0f));
 			m_dynamicBodyPtrs[0]->setPosition(mSpherePos);
 
@@ -235,7 +233,6 @@ void Application::HandleUpdate()
 			mSphereVel = XMFLOAT3(0.0f, 0.2f, 0.0f);
 			mGravityAcc = XMFLOAT3(0.0f, G_VALUE, 0.0f);
 			mSphereCollided = true;
-			m_dynamicBodyPtrs[0]->resetCollidedFlag();
 			m_dynamicBodyPtrs[0]->setPosition(mSpherePos);
 			m_dynamicBodyPtrs[0]->setVelocity(XMFLOAT3(0, 0, 0));
 			dbN = true;
@@ -300,7 +297,6 @@ void Application::HandleUpdate()
 			m_pCurrentHeightmap->GetFaceVerticesByIndex(faceIndex, float3Array);
 			mSpherePos = XMFLOAT3(float3Array[indexInVecArray].x, 20.0f, float3Array[indexInVecArray].z);
 			mSphereVel = XMFLOAT3(0.0f, 0.2f, 0.0f);
-			m_dynamicBodyPtrs[0]->resetCollidedFlag();
 			m_dynamicBodyPtrs[0]->setVelocity(mSphereVel);
 			m_dynamicBodyPtrs[0]->setPosition(mSpherePos);
 
@@ -327,7 +323,6 @@ void Application::HandleUpdate()
 			mSphereVel = XMFLOAT3(0.0f, 0.2f, 0.0f);
 			m_dynamicBodyPtrs[0]->setVelocity(mSphereVel);
 			m_dynamicBodyPtrs[0]->setPosition(mSpherePos);
-			m_dynamicBodyPtrs[0]->resetCollidedFlag();
 
 			if (--faceIndex < 0)
 			{
@@ -365,8 +360,6 @@ void Application::HandleUpdate()
 
 	if (IsKeyPressed('F'))
 	{
-		m_dynamicBodyPtrs[0]->resetCollidedFlag();
-		m_dynamicBodyPtrs[1]->resetCollidedFlag();
 		mSphereVel = XMFLOAT3(0.0f, 0.2f, 0.0f);
 
 		m_dynamicBodyPtrs[0]->setVelocity(mSphereVel);
@@ -396,7 +389,6 @@ void Application::HandleUpdate()
 				mSphereVel = XMFLOAT3(0.0f, 0.2f, 0.0f);
 				pBody->setVelocity(mSphereVel);
 				pBody->setPosition(mSpherePos);
-				pBody->resetCollidedFlag();
 				pBody->setActivityFlag(true);
 			}
 			dbUp = true;

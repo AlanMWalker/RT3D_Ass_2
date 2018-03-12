@@ -17,8 +17,19 @@ void PhysicsWorld::tick()
 {
 	float dt = Application::s_pApp->m_deltaTime;
 	for (auto& pDynBody : m_pDynamicBodies)
-		pDynBody->updateDynamicBody(dt);
+	{
+		if (!pDynBody->isActive())
+		{
+			continue;
+		}
 
+		if (!XMVectorGetY(pDynBody->getPosition()) < -10.0f) //  ball drops too far down 
+		{
+			pDynBody->setActivityFlag(false);
+		}
+
+		pDynBody->updateDynamicBody(dt);
+	}
 	generateCollisionPairs();
 	clearCollisionStack();
 }
