@@ -78,6 +78,8 @@ public:
 
 	float getInverseMass() const { return m_invMass; }
 
+	void setMass(float mass);
+
 private:
 
 	void checkHeightMapCollision();

@@ -57,6 +57,20 @@ void DynamicBody::setVelocity(const DirectX::XMFLOAT3 & vel)
 	m_velocity = XMLoadFloat3(&vel);
 }
 
+void DynamicBody::setMass(float mass)
+{
+	if (mass != 0.0f)
+	{
+		m_mass = mass;
+		m_invMass = mass;
+	}
+	else
+	{
+		m_mass = 0;
+		m_invMass = 1.0f;
+	}
+}
+
 void DynamicBody::checkHeightMapCollision()
 {
 	float e = 0.6f;

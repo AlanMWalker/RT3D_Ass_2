@@ -29,7 +29,7 @@ bool Application::HandleStart()
 	m_heightMapPtrs[2] = new HeightMap("Resources/heightmap_c.bmp", 2.0f, 0.75f);
 	m_heightMapPtrs[3] = new HeightMap("Resources/heightmap_d.bmp", 2.0f, 0.75f);
 
-	m_pCurrentHeightmap = m_heightMapPtrs[1];
+	m_pCurrentHeightmap = m_heightMapPtrs[0];
 
 	mSpherePos = XMFLOAT3(-14.0, 20.0f, -14.0f);
 	mSphereVel = XMFLOAT3(0.0f, 0.0f, 0.0f);
@@ -61,6 +61,7 @@ bool Application::HandleStart()
 			SphereCollider* pSphereCollider = new SphereCollider;
 			pSphereCollider->radius = 1.0f;
 			m_dynamicBodyPtrs[i] = new DynamicBody(CommonMesh::NewSphereMesh(this, 1.0f, 16, 16), pSphereCollider);
+			//m_dynamicBodyPtrs[i]->setMass((rand() % 100) + 1.0f);
 		}
 		m_dynamicBodyPtrs[i]->setPosition(mSpherePos);
 

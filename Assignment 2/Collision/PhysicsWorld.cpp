@@ -112,7 +112,7 @@ bool PhysicsWorld::checkIntersection(CollisionPOD & collPod)
 void PhysicsWorld::resolveImpulse(CollisionPOD & collPOD)
 {
 	//DynamicBody
-	const float e = 0.2f;
+	const float e = 0.5f;
 	const float invMassSum = collPOD.pBodyA->getInverseMass() + collPOD.pBodyB->getInverseMass();
 
 	XMVECTOR relativeVel = collPOD.pBodyB->getVelocity() - collPOD.pBodyA->getVelocity();
