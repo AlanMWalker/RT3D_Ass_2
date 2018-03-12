@@ -26,6 +26,8 @@ bool Application::HandleStart()
 
 	m_heightMapPtrs[0] = new HeightMap("Resources/heightmap_a.bmp", 2.0f, 0.75f);
 	m_heightMapPtrs[1] = new HeightMap("Resources/heightmap_b.bmp", 2.0f, 0.75f);
+	m_heightMapPtrs[2] = new HeightMap("Resources/heightmap_c.bmp", 2.0f, 0.75f);
+	m_heightMapPtrs[3] = new HeightMap("Resources/heightmap_d.bmp", 2.0f, 0.75f);
 
 	m_pCurrentHeightmap = m_heightMapPtrs[1];
 
@@ -437,18 +439,13 @@ void Application::HandleUpdate()
 #pragma region Change Heightmap Controls
 
 	static bool bIsTabDown = false;
+	static int heightMapIndex = 0; // current heightmap
 	if (IsKeyPressed(VK_TAB))
 	{
 		if (!bIsTabDown)
 		{
-			if (m_pCurrentHeightmap == m_heightMapPtrs[0])
-			{
-				m_pCurrentHeightmap = m_heightMapPtrs[1];
-			}
-			else
-			{
-				m_pCurrentHeightmap = m_heightMapPtrs[0];
-			}
+			heightMapIndex + 1 < MAX_HEIGHTMAPS_COUNT ? ++heightMapIndex : heightMapIndex = 0;
+			m_pCurrentHeightmap = m_heightMapPtrs[heightMapIndex];
 			bIsTabDown = true;
 		}
 	}

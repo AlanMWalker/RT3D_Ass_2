@@ -36,6 +36,7 @@ class HeightMap;
 #define G_VALUE -50.0f
 
 #define SPHERE_COUNT 100
+#define MAX_HEIGHTMAPS_COUNT 4
 
 class PhysicsWorld;
 
@@ -73,7 +74,7 @@ private:
 
 	int m_cameraState;
 
-	HeightMap* m_heightMapPtrs[2] = { nullptr, nullptr };
+	HeightMap* m_heightMapPtrs[MAX_HEIGHTMAPS_COUNT] = { nullptr, nullptr, nullptr, nullptr };
 	HeightMap* m_pCurrentHeightmap = nullptr;
 
 	PhysicsWorld* m_pPhysicsWorld;

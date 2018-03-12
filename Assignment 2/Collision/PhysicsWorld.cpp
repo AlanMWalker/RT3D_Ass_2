@@ -106,6 +106,10 @@ void PhysicsWorld::resolveImpulse(CollisionPOD & collPOD)
 
 	XMVECTOR relativeVel = collPOD.pBodyB->getVelocity() - collPOD.pBodyA->getVelocity();
 	const float velAlongNormal = XMVectorGetX(XMVector3Dot(relativeVel, collPOD.normal));
+	if (velAlongNormal > 0)
+	{// moving apart so do nothing 
+		return;
+	}
 	const float j = (-(1 + e) * velAlongNormal) / invMassSum;
 	XMVECTOR impulse = j * collPOD.normal;
 
