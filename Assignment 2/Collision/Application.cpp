@@ -61,7 +61,7 @@ bool Application::HandleStart()
 			SphereCollider* pSphereCollider = new SphereCollider;
 			pSphereCollider->radius = 1.0f;
 			m_dynamicBodyPtrs[i] = new DynamicBody(CommonMesh::NewSphereMesh(this, 1.0f, 16, 16), pSphereCollider);
-			m_dynamicBodyPtrs[i]->setMass(20.0f);
+			m_dynamicBodyPtrs[i]->setMass(1.0f);
 		}
 		m_dynamicBodyPtrs[i]->setPosition(mSpherePos);
 

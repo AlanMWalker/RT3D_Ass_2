@@ -40,6 +40,7 @@ void PhysicsWorld::tick()
 			continue;
 		}
 		pDynBody->checkHeightMapCollision();
+		pDynBody->updatePositions(dt);
 	}
 }
 

@@ -56,6 +56,7 @@ public:
 	OP_DEL;
 
 	void updateDynamicBody(float dt);
+	void updatePositions(float dt);
 
 	void setPosition(const DirectX::XMVECTOR& pos);
 	void setPosition(const DirectX::XMFLOAT3& pos);

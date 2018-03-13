@@ -199,7 +199,7 @@ void App::Render()
 	this->HandleRender();
 
 	// Present whatever.
-	m_pDXGISwapChain->Present(0, 0);
+	m_pDXGISwapChain->Present(1, 0);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -572,7 +572,7 @@ int Run(App *pApp)
 	chrono::time_point<chrono::steady_clock> prevTime = chrono::high_resolution_clock::now();
 	chrono::time_point<chrono::steady_clock> currentTime = prevTime;
 	static bool tickedOnce = false;
-
+	
 	while (DoMessages())
 	{
 		// Wait until the next 60th-of-a-second boundary has
@@ -601,7 +601,7 @@ int Run(App *pApp)
 		}
 
 		nextUpdate.QuadPart = now.QuadPart + oneFrame.QuadPart;
-
+		
 		pApp->Update();
 
 		pApp->Render();

@@ -30,12 +30,19 @@ void DynamicBody::updateDynamicBody(float dt)
 	}
 	//checkHeightMapCollision();
 
-
-	m_velocity += (dt / 2.0f) * XMVectorSet(0.0f, G_VALUE, 0.0f, 0.0f); // step acceleration and apply this change to the velocity 
+	m_velocity += dt * XMVectorSet(0.0f, G_VALUE, 0.0f, 0.0f);
+	//m_velocity += (dt / 2.0f) * XMVectorSet(0.0f, G_VALUE, 0.0f, 0.0f); // step acceleration and apply this change to the velocity 
 	m_position += dt * m_velocity; // step velocity and calculate the change in position and apply this translation to the current position 
-	m_velocity += (dt / 2.0f) * XMVectorSet(0.0f, G_VALUE, 0.0f, 0.0f); // step acceleration and apply this change to the velocity 
+	//m_velocity += (dt / 2.0f) * XMVectorSet(0.0f, G_VALUE, 0.0f, 0.0f); // step acceleration and apply this change to the velocity 
 
 	m_worldMatrix = XMMatrixTranslation(XMVectorGetX(m_position), XMVectorGetY(m_position), XMVectorGetZ(m_position));
+}
+
+void DynamicBody::updatePositions(float dt)
+{
+	m_position += dt * m_velocity; // step velocity and calculate the change in position and apply this translation to the current position 
+	m_worldMatrix = XMMatrixTranslation(XMVectorGetX(m_position), XMVectorGetY(m_position), XMVectorGetZ(m_position));
+
 }
 
 void DynamicBody::setPosition(const DirectX::XMVECTOR & pos)
@@ -155,8 +162,8 @@ void DynamicBody::checkHeightMapCollision()
 			XMFLOAT3 temp;
 			XMStoreFloat3(&temp, frictionImpulse);
 			applyImpulse(temp);
-			const float adjusted_pen = penetration / 10.0f;
-			XMVECTOR correction = (max(adjusted_pen - Application::CollisionThreshold, 0.0f) / m_invMass) * Application::CollisionPercentage* colNormal;
+			//const float adjusted_pen = penetration / 10.0f;
+			XMVECTOR correction = (max(penetration - Application::CollisionThreshold, 0.0f) / m_invMass) * Application::CollisionPercentage* colNormal;
 
 			m_position += correction;
 		}
