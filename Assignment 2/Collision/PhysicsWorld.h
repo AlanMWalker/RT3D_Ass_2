@@ -28,12 +28,16 @@ public:
 	OP_DEL;
 
 private:
-	
+
 	void generateCollisionPairs();
 	void clearCollisionStack();
 
 	bool checkIntersection(CollisionPOD& collPod);
 	void resolveImpulse(CollisionPOD& collPod);
+
+	void resolveHeightmapCollision(const CollisionPOD& collPod);
+	void positionalCorrectionHeightmap(const CollisionPOD& collPod);
+
 	void correctPosition(CollisionPOD& collPod);
 
 	DynamicBody* m_pDynamicBodies[SPHERE_COUNT];

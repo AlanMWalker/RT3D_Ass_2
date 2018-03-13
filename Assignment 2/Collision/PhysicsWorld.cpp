@@ -15,7 +15,7 @@ PhysicsWorld::~PhysicsWorld()
 
 void PhysicsWorld::tick()
 {
-	float dt = Application::s_pApp->m_deltaTime;
+	float dt = PhysicsDT;
 	for (auto& pDynBody : m_pDynamicBodies)
 	{
 		if (!pDynBody->isActive())
@@ -32,16 +32,6 @@ void PhysicsWorld::tick()
 	}
 	generateCollisionPairs();
 	clearCollisionStack();
-
-	for (auto& pDynBody : m_pDynamicBodies)
-	{
-		if (!pDynBody->isActive())
-		{
-			continue;
-		}
-		pDynBody->checkHeightMapCollision();
-		pDynBody->updatePositions(dt);
-	}
 }
 
 void PhysicsWorld::generateCollisionPairs()
@@ -73,6 +63,8 @@ void PhysicsWorld::generateCollisionPairs()
 
 void PhysicsWorld::clearCollisionStack()
 {
+#pragma region HANDLE THE SPHERE COLLISIONS STACK
+
 	while (!m_collisionPODs.empty())
 	{
 		CollisionPOD collPOD = m_collisionPODs.top();
@@ -85,6 +77,27 @@ void PhysicsWorld::clearCollisionStack()
 
 		m_collisionPODs.pop();
 	}
+
+#pragma endregion
+
+#pragma region HANDLE THE HEIGHTMAP COLLISIONS
+
+	for (auto pDynBody : m_pDynamicBodies)
+	{
+		if (!pDynBody->isActive())
+		{
+			continue;
+		}
+
+		if (!pDynBody->didCollideWithHeightmap())
+		{
+			continue;
+		}
+
+		resolveHeightmapCollision(*pDynBody->getHeightmapCollisionData());
+		positionalCorrectionHeightmap(*pDynBody->getHeightmapCollisionData());
+	}
+#pragma endregion
 }
 
 bool PhysicsWorld::checkIntersection(CollisionPOD & collPod)
@@ -144,11 +157,61 @@ void PhysicsWorld::resolveImpulse(CollisionPOD & collPOD)
 	collPOD.pBodyB->applyImpulse(impulseFloat3B);
 }
 
+void PhysicsWorld::resolveHeightmapCollision(const CollisionPOD& collPod)
+{
+	const float e = 0.4f;
+
+	XMVECTOR relativeVel = -collPod.pBodyA->getVelocity();
+	const float velAlongNormal = XMVectorGetX(XMVector3Dot(relativeVel, collPod.normal));
+
+	if (velAlongNormal < 0.0f)
+	{
+		return;
+	}
+
+	const float j = -(1.0f + e) * velAlongNormal;
+	XMVECTOR impulse = j * collPod.normal;
+
+	XMFLOAT3 tempImpulse;
+	XMStoreFloat3(&tempImpulse, -impulse);
+	collPod.pBodyA->applyImpulse(tempImpulse);
+
+	relativeVel = -collPod.pBodyA->getVelocity();
+	XMVECTOR t = relativeVel - (collPod.normal * XMVectorGetX(XMVector3Dot(collPod.normal, relativeVel)));
+	t = XMVector3Normalize(t);
+	//
+	const float staticFric = 0.5;
+	const float dynFric = 0.2f;
+	//
+	float jTangent = -XMVectorGetX(XMVector3Dot(relativeVel, t));
+
+	XMVECTOR frictionImpulse;
+	if (fabs(jTangent) < j * staticFric)
+	{
+		frictionImpulse = jTangent * t;
+	}
+	else
+	{
+		frictionImpulse = -j * t * dynFric;
+	}
+
+	XMFLOAT3 temp;
+	XMStoreFloat3(&temp, frictionImpulse);
+	collPod.pBodyA->applyImpulse(temp);
+
+	//setVelocity(m_velocity - impulse);
+}
+
+void PhysicsWorld::positionalCorrectionHeightmap(const CollisionPOD& collPod)
+{
+	XMVECTOR correction = (max(collPod.penetration - Application::CollisionThreshold, 0.0f) / collPod.pBodyA->getInverseMass())
+		* Application::CollisionPercentage* collPod.normal;
+	collPod.pBodyA->setPosition(collPod.pBodyA->getPosition() + correction);
+}
+
 void PhysicsWorld::correctPosition(CollisionPOD & collPod)
 {
 	////float penetration = radius - XMVectorGetX(XMVector3Length(colPos - m_position));
-	constexpr float correctionThreshold = 0.01f;
-	constexpr float correctPercentage = 0.6f;
 	const float invMassA = collPod.pBodyA->getInverseMass();
 	const float invMassB = collPod.pBodyB->getInverseMass();
 

@@ -2,6 +2,7 @@
 #include "Application.h"
 #include "HeightMap.h"
 #include "CommonMesh.h"
+#include "PhysicsWorld.h"
 
 using namespace DirectX;
 
@@ -14,12 +15,18 @@ DynamicBody::DynamicBody(CommonMesh* pCommonMesh, ColliderBase* pCollider)
 	assert(pCollider);
 	setVelocity(XMFLOAT3(0, 0, 0));
 	setPosition(XMFLOAT3(0, 0, 0));
+	m_pHeightMapCollision = new CollisionPOD;
+
+	memset(m_pHeightMapCollision, 0, sizeof(CollisionPOD));
+	m_pHeightMapCollision->pBodyA = this;
+
 	m_worldMatrix = XMMatrixTranslation(XMVectorGetX(m_position), XMVectorGetY(m_position), XMVectorGetZ(m_position));
 }
 
 DynamicBody::~DynamicBody()
 {
 	SAFE_FREE(m_pBaseCollider);
+	SAFE_FREE(m_pHeightMapCollision);
 }
 
 void DynamicBody::updateDynamicBody(float dt)
@@ -28,21 +35,19 @@ void DynamicBody::updateDynamicBody(float dt)
 	{
 		return;
 	}
-	//checkHeightMapCollision();
+	checkHeightMapCollision();
 
-	m_velocity += dt * XMVectorSet(0.0f, G_VALUE, 0.0f, 0.0f);
-	//m_velocity += (dt / 2.0f) * XMVectorSet(0.0f, G_VALUE, 0.0f, 0.0f); // step acceleration and apply this change to the velocity 
+	//m_velocity += dt * XMVectorSet(0.0f, G_VALUE, 0.0f, 0.0f);
+	m_velocity += (dt / 2.0f) * XMVectorSet(0.0f, G_VALUE, 0.0f, 0.0f); // step acceleration and apply this change to the velocity 
 	m_position += dt * m_velocity; // step velocity and calculate the change in position and apply this translation to the current position 
-	//m_velocity += (dt / 2.0f) * XMVectorSet(0.0f, G_VALUE, 0.0f, 0.0f); // step acceleration and apply this change to the velocity 
+	m_velocity += (dt / 2.0f) * XMVectorSet(0.0f, G_VALUE, 0.0f, 0.0f); // step acceleration and apply this change to the velocity 
+
+	if (XMVectorGetX(XMVector3Length(m_velocity)) < 0.001)
+	{
+		m_velocity = XMVectorSet(0, 0, 0, 0);
+	}
 
 	m_worldMatrix = XMMatrixTranslation(XMVectorGetX(m_position), XMVectorGetY(m_position), XMVectorGetZ(m_position));
-}
-
-void DynamicBody::updatePositions(float dt)
-{
-	m_position += dt * m_velocity; // step velocity and calculate the change in position and apply this translation to the current position 
-	m_worldMatrix = XMMatrixTranslation(XMVectorGetX(m_position), XMVectorGetY(m_position), XMVectorGetZ(m_position));
-
 }
 
 void DynamicBody::setPosition(const DirectX::XMVECTOR & pos)
@@ -123,51 +128,21 @@ void DynamicBody::checkHeightMapCollision()
 		XMVECTOR colNormal;
 		float radius = static_cast<SphereCollider*>(m_pBaseCollider)->radius;
 		float penetration;
-		const bool bCollided = pCurrentHeightmap->SphereCollision(m_position, radius, colNormal, penetration);
+		m_bDidHeightmapCollide = pCurrentHeightmap->SphereCollision(m_position, radius, colNormal, penetration);
 
-		if (bCollided)
+		if (m_bDidHeightmapCollide)
 		{
+			m_pHeightMapCollision->normal = colNormal;
+			m_pHeightMapCollision->penetration = penetration;
 
-			XMVECTOR relativeVel = -m_velocity;
-			const float velAlongNormal = XMVectorGetX(XMVector3Dot(relativeVel, colNormal));
-			if (velAlongNormal < 0.0f)
-			{
-
-				return;
-			}
-			const float j = -(1.0f + e) * velAlongNormal;
-			XMVECTOR impulse = j * colNormal;
-
-			setVelocity(m_velocity - impulse);
-
-			relativeVel = -m_velocity;
-			XMVECTOR t = relativeVel - (colNormal * XMVectorGetX(XMVector3Dot(colNormal, relativeVel)));
-			t = XMVector3Normalize(t);
-			//
-			const float staticFric = 1.0;
-			const float dynFric = 0.8f;
-			//
-			float jTangent = -XMVectorGetX(XMVector3Dot(relativeVel, t));
-
-			XMVECTOR frictionImpulse;
-			if (fabs(jTangent) < j * staticFric)
-			{
-				frictionImpulse = jTangent * t;
-			}
-			else
-			{
-				frictionImpulse = -j * t * dynFric;
-			}
-
-			XMFLOAT3 temp;
-			XMStoreFloat3(&temp, frictionImpulse);
-			applyImpulse(temp);
-			//const float adjusted_pen = penetration / 10.0f;
-			XMVECTOR correction = (max(penetration - Application::CollisionThreshold, 0.0f) / m_invMass) * Application::CollisionPercentage* colNormal;
-
-			m_position += correction;
+			return;
 		}
 		break;
 	}
 	}
+}
+
+const CollisionPOD * const DynamicBody::getHeightmapCollisionData() const
+{
+	return m_pHeightMapCollision;
 }

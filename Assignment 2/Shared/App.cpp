@@ -572,7 +572,7 @@ int Run(App *pApp)
 	chrono::time_point<chrono::steady_clock> prevTime = chrono::high_resolution_clock::now();
 	chrono::time_point<chrono::steady_clock> currentTime = prevTime;
 	static bool tickedOnce = false;
-	
+	float accumulator = 0.0f;
 	while (DoMessages())
 	{
 		// Wait until the next 60th-of-a-second boundary has
@@ -585,6 +585,8 @@ int Run(App *pApp)
 		{
 			const chrono::milliseconds timeInMs = chrono::duration_cast<chrono::milliseconds>((currentTime - prevTime));
 			pApp->m_appBaseDT = (float)(timeInMs.count()) / 1000.0f;
+
+			accumulator += pApp->m_appBaseDT > PhysicsDT ? pApp->m_appBaseDT : (pApp->m_appBaseDT = PhysicsDT);
 		}
 
 		for (;;)
@@ -601,8 +603,12 @@ int Run(App *pApp)
 		}
 
 		nextUpdate.QuadPart = now.QuadPart + oneFrame.QuadPart;
-		
-		pApp->Update();
+
+		while (accumulator >= PhysicsDT)
+		{
+			pApp->Update();
+			accumulator -= PhysicsDT;
+		}
 
 		pApp->Render();
 

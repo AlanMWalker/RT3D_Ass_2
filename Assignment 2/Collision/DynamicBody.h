@@ -9,6 +9,8 @@
 class CommonMesh;
 class HeightMap;
 
+struct CollisionPOD;
+
 enum ColliderTypes3D
 {
 	AABB,
@@ -56,7 +58,6 @@ public:
 	OP_DEL;
 
 	void updateDynamicBody(float dt);
-	void updatePositions(float dt);
 
 	void setPosition(const DirectX::XMVECTOR& pos);
 	void setPosition(const DirectX::XMFLOAT3& pos);
@@ -73,6 +74,7 @@ public:
 
 	CommonMesh* const getCommonMesh() { return m_pCommonMesh; }
 	ColliderBase* const getColliderBase() { return m_pBaseCollider; }
+
 	void setActivityFlag(bool bIsActive) { m_bIsActive = bIsActive; }
 
 	bool isActive() const { return m_bIsActive; }
@@ -84,8 +86,12 @@ public:
 	void setMass(float mass);
 
 	void checkHeightMapCollision();
-private:
 
+	const CollisionPOD* const getHeightmapCollisionData() const;
+
+	bool didCollideWithHeightmap() const { return m_bDidHeightmapCollide; }
+
+private:
 
 	DirectX::XMVECTOR m_velocity;
 	DirectX::XMVECTOR m_position;
@@ -95,11 +101,14 @@ private:
 	CommonMesh* m_pCommonMesh;
 	HeightMap* m_pHeightMap;
 	ColliderBase* m_pBaseCollider;
+	CollisionPOD* m_pHeightMapCollision;
 
 	bool m_bIsActive;
 
 	float m_mass = 1.0f;
 	float m_invMass = 1.0f / m_mass;
+
+	bool m_bDidHeightmapCollide = false;
 };
 
 #endif // !DYNAMIC_BODY_H
