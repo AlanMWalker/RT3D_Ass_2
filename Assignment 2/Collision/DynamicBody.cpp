@@ -28,12 +28,13 @@ void DynamicBody::updateDynamicBody(float dt)
 	{
 		return;
 	}
+	checkHeightMapCollision();
+
 
 	m_velocity += (dt / 2.0f) * XMVectorSet(0.0f, G_VALUE, 0.0f, 0.0f); // step acceleration and apply this change to the velocity 
 	m_position += dt * m_velocity; // step velocity and calculate the change in position and apply this translation to the current position 
 	m_velocity += (dt / 2.0f) * XMVectorSet(0.0f, G_VALUE, 0.0f, 0.0f); // step acceleration and apply this change to the velocity 
 
-	checkHeightMapCollision();
 	m_worldMatrix = XMMatrixTranslation(XMVectorGetX(m_position), XMVectorGetY(m_position), XMVectorGetZ(m_position));
 }
 
@@ -57,23 +58,32 @@ void DynamicBody::setVelocity(const DirectX::XMFLOAT3 & vel)
 	m_velocity = XMLoadFloat3(&vel);
 }
 
+void DynamicBody::applyImpulse(const XMFLOAT3 & impulse)
+{
+	XMVECTOR impulseVec = XMVectorSet(impulse.x, impulse.y, impulse.z, 0.0f);
+	XMVECTOR vel = getVelocity();
+	vel += (m_invMass * impulseVec);
+
+	setVelocity(vel);
+}
+
 void DynamicBody::setMass(float mass)
 {
 	if (mass != 0.0f)
 	{
 		m_mass = mass;
-		m_invMass = mass;
+		m_invMass = 1.0f / mass;
 	}
 	else
 	{
 		m_mass = 0;
-		m_invMass = 1.0f;
+		m_invMass = 0.0f;
 	}
 }
 
 void DynamicBody::checkHeightMapCollision()
 {
-	float e = 0.6f;
+	float e = 0.4f;
 	HeightMap* pCurrentHeightmap = Application::s_pApp->GetHeightmap();
 	assert(pCurrentHeightmap);
 
@@ -113,12 +123,12 @@ void DynamicBody::checkHeightMapCollision()
 
 			XMVECTOR relativeVel = -m_velocity;
 			const float velAlongNormal = XMVectorGetX(XMVector3Dot(relativeVel, colNormal));
-			if (velAlongNormal < 0)
+			if (velAlongNormal < 0.0f)
 			{
 
 				return;
 			}
-			const float j = -(1 + e) * velAlongNormal;
+			const float j = -(1.0f + e) * velAlongNormal;
 			XMVECTOR impulse = j * colNormal;
 
 			setVelocity(m_velocity - impulse);
@@ -126,23 +136,26 @@ void DynamicBody::checkHeightMapCollision()
 			relativeVel = -m_velocity;
 			XMVECTOR t = relativeVel - (colNormal * XMVectorGetX(XMVector3Dot(colNormal, relativeVel)));
 			t = XMVector3Normalize(t);
-
-			const float staticFric = 0.1f;
-			const float dynFric = 0.2f;
-
+			//
+			const float staticFric = 1.0;
+			const float dynFric = 0.8f;
+			//
 			float jTangent = -XMVectorGetX(XMVector3Dot(relativeVel, t));
 
-			if (jTangent != 0.0f)
+			XMVECTOR frictionImpulse;
+			if (fabs(jTangent) < j * staticFric)
 			{
-				if (fabs(jTangent) < j * staticFric)
-				{
-					setVelocity(m_velocity + (t* jTangent));
-				}
-				else
-				{
-					setVelocity(m_velocity + (t * -j * dynFric));
-				}
+				frictionImpulse = jTangent * t;
 			}
+			else
+			{
+				frictionImpulse = -j * t * dynFric;
+			}
+
+			XMFLOAT3 temp;
+			XMStoreFloat3(&temp, frictionImpulse);
+			applyImpulse(temp);
+			
 			XMVECTOR correction = (max(penetration - Application::CollisionThreshold, 0.0f)) * Application::CollisionPercentage* colNormal;
 
 			m_position += correction;

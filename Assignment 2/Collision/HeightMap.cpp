@@ -35,7 +35,7 @@ HeightMap::HeightMap(char* filename, float gridSize, float heightRange)
 	m_pHeightMapBuffer = CreateDynamicVertexBuffer(Application::s_pApp->GetDevice(), sizeof Vertex_Pos3fColour4ubNormal3fTex2f * m_HeightMapVtxCount, 0);
 
 	BuildCollisionData();
-	DisableBelowLevel(Y_DISABLE_VALUE);
+	//DisableBelowLevel(Y_DISABLE_VALUE);
 	RebuildVertexData();
 
 	for (size_t i = 0; i < NUM_TEXTURE_FILES; ++i)

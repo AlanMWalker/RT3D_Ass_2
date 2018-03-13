@@ -11,7 +11,7 @@
 
 #include "Application.h"
 
-static const char *const g_aTextureFileNames[] = {
+static const char * const g_aTextureFileNames[] = {
 	"Resources/Intersection.dds",
 	"Resources/Intersection.dds",
 	"Resources/Collision.dds",
@@ -27,19 +27,26 @@ static const size_t NUM_TEXTURE_FILES = sizeof g_aTextureFileNames / sizeof g_aT
 class HeightMap
 {
 public:
-	
+
 	HeightMap(char* filename, float gridSize, float heightRange);
 	~HeightMap();
 
 	void Draw(float frameCount);
+
 	bool ReloadShader();
 	void DeleteShader();
+
 	bool RayCollision(XMVECTOR& rayPos, XMVECTOR rayDir, float speed, XMVECTOR& colPos, XMVECTOR& colNormN);
 	bool SphereCollision(const XMVECTOR& spherePos, float radius, XMVECTOR& colNormN, float& penetration);
+
 	int DisableBelowLevel(float fY);
 	int EnableAll(void);
+
 	void GetFaceVerticesByIndex(int index, XMFLOAT3 vecArray[FACE_NORM_VERTICES_COUNT]) const;
+
 	int GetFaceCount() const { return m_HeightMapFaceCount; }
+	int GetWidth() const { return m_HeightMapWidth; }
+	int GetLength() const { return m_HeightMapLength; }
 
 private:
 

@@ -68,6 +68,8 @@ public:
 
 	const DirectX::XMMATRIX& getWorldMatrix() const { return m_worldMatrix; }
 
+	void applyImpulse(const DirectX::XMFLOAT3& impulse);
+
 	CommonMesh* const getCommonMesh() { return m_pCommonMesh; }
 	ColliderBase* const getColliderBase() { return m_pBaseCollider; }
 	void setActivityFlag(bool bIsActive) { m_bIsActive = bIsActive; }

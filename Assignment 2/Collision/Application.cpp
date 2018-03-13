@@ -61,7 +61,7 @@ bool Application::HandleStart()
 			SphereCollider* pSphereCollider = new SphereCollider;
 			pSphereCollider->radius = 1.0f;
 			m_dynamicBodyPtrs[i] = new DynamicBody(CommonMesh::NewSphereMesh(this, 1.0f, 16, 16), pSphereCollider);
-			//m_dynamicBodyPtrs[i]->setMass((rand() % 100) + 1.0f);
+			m_dynamicBodyPtrs[i]->setMass(20.0f);
 		}
 		m_dynamicBodyPtrs[i]->setPosition(mSpherePos);
 
@@ -366,12 +366,14 @@ void Application::HandleUpdate()
 		m_dynamicBodyPtrs[0]->setVelocity(mSphereVel);
 		m_dynamicBodyPtrs[1]->setVelocity(mSphereVel);
 
-		XMFLOAT3 returnedVerts[FACE_NORM_VERTICES_COUNT]{ XMFLOAT3(0.0f,0.0f,0.0f) };
+		XMFLOAT3 returnedVerts[FACE_NORM_VERTICES_COUNT]{ XMFLOAT3(0.0f, 0.0f, 0.0f) };
+		const int idxA = 10;
+		const int idxB = 2;
 
-		m_pCurrentHeightmap->GetFaceVerticesByIndex(0, returnedVerts);
+		m_pCurrentHeightmap->GetFaceVerticesByIndex(idxA, returnedVerts);
 		m_dynamicBodyPtrs[0]->setPosition(XMFLOAT3(returnedVerts[3].x, 20.0f, returnedVerts[3].z));
 
-		m_pCurrentHeightmap->GetFaceVerticesByIndex(m_pCurrentHeightmap->GetFaceCount() - 1, returnedVerts);
+		m_pCurrentHeightmap->GetFaceVerticesByIndex(idxB, returnedVerts);
 		m_dynamicBodyPtrs[1]->setPosition(XMFLOAT3(returnedVerts[3].x, 20.0f, returnedVerts[3].z));
 		m_dynamicBodyPtrs[1]->setActivityFlag(true);
 
@@ -400,7 +402,7 @@ void Application::HandleUpdate()
 		dbUp = false;
 	}
 
-	static bool enableBase = false;
+	static bool disableBase = true;
 	static bool dbH = false;
 
 	if (IsKeyPressed('H'))
@@ -408,7 +410,7 @@ void Application::HandleUpdate()
 		if (!dbH)
 		{
 			dbH = true;
-			if (enableBase)
+			if (!disableBase)
 			{
 				const int hiddenCount = m_pCurrentHeightmap->EnableAll();
 				dprintf("Hidden count: %d\n", hiddenCount);
@@ -418,7 +420,7 @@ void Application::HandleUpdate()
 				const int hiddenCount = m_pCurrentHeightmap->DisableBelowLevel(Y_DISABLE_VALUE);
 				dprintf("Hidden count: %d\n", hiddenCount);
 			}
-			enableBase = !enableBase;
+			disableBase = !disableBase;
 		}
 	}
 	else
