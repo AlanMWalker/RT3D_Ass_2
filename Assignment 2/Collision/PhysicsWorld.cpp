@@ -23,7 +23,7 @@ void PhysicsWorld::tick()
 			continue;
 		}
 
-		if (!XMVectorGetY(pDynBody->getPosition()) < -10.0f) //  ball drops too far down 
+		if (XMVectorGetY(pDynBody->getPosition()) < -10.0f) //  ball drops too far down 
 		{
 			pDynBody->setActivityFlag(false);
 		}
@@ -32,6 +32,15 @@ void PhysicsWorld::tick()
 	}
 	generateCollisionPairs();
 	clearCollisionStack();
+
+	for (auto& pDynBody : m_pDynamicBodies)
+	{
+		if (!pDynBody->isActive())
+		{
+			continue;
+		}
+		pDynBody->checkHeightMapCollision();
+	}
 }
 
 void PhysicsWorld::generateCollisionPairs()

@@ -82,9 +82,9 @@ public:
 
 	void setMass(float mass);
 
+	void checkHeightMapCollision();
 private:
 
-	void checkHeightMapCollision();
 
 	DirectX::XMVECTOR m_velocity;
 	DirectX::XMVECTOR m_position;
