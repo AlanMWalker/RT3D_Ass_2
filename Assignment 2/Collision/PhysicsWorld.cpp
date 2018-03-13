@@ -15,7 +15,7 @@ PhysicsWorld::~PhysicsWorld()
 
 void PhysicsWorld::tick()
 {
-	float dt = PhysicsDT;
+	float dt = Application::s_pApp->m_deltaTime;
 	for (auto& pDynBody : m_pDynamicBodies)
 	{
 		if (!pDynBody->isActive())
@@ -30,6 +30,7 @@ void PhysicsWorld::tick()
 
 		pDynBody->updateDynamicBody(dt);
 	}
+
 	generateCollisionPairs();
 	clearCollisionStack();
 }
@@ -64,7 +65,6 @@ void PhysicsWorld::generateCollisionPairs()
 void PhysicsWorld::clearCollisionStack()
 {
 #pragma region HANDLE THE SPHERE COLLISIONS STACK
-
 	while (!m_collisionPODs.empty())
 	{
 		CollisionPOD collPOD = m_collisionPODs.top();
@@ -135,7 +135,7 @@ bool PhysicsWorld::checkIntersection(CollisionPOD & collPod)
 void PhysicsWorld::resolveImpulse(CollisionPOD & collPOD)
 {
 	//DynamicBody
-	constexpr float e = 0.25f;
+	constexpr float e = 0.4f;
 	const float invMassSum = collPOD.pBodyA->getInverseMass() + collPOD.pBodyB->getInverseMass();
 
 	XMVECTOR relativeVel = collPOD.pBodyB->getVelocity() - collPOD.pBodyA->getVelocity();
@@ -159,8 +159,11 @@ void PhysicsWorld::resolveImpulse(CollisionPOD & collPOD)
 
 void PhysicsWorld::resolveHeightmapCollision(const CollisionPOD& collPod)
 {
-	const float e = 0.4f;
+	constexpr float e = 0.7f;
+	constexpr float staticFric = 0.5f;
+	constexpr float dynamicFric = 0.2f;
 
+	//COLLISION IMPULSE
 	XMVECTOR relativeVel = -collPod.pBodyA->getVelocity();
 	const float velAlongNormal = XMVectorGetX(XMVector3Dot(relativeVel, collPod.normal));
 
@@ -176,27 +179,32 @@ void PhysicsWorld::resolveHeightmapCollision(const CollisionPOD& collPod)
 	XMStoreFloat3(&tempImpulse, -impulse);
 	collPod.pBodyA->applyImpulse(tempImpulse);
 
+	// FRICTION IMPULSE
 	relativeVel = -collPod.pBodyA->getVelocity();
 	XMVECTOR t = relativeVel - (collPod.normal * XMVectorGetX(XMVector3Dot(collPod.normal, relativeVel)));
-	t = XMVector3Normalize(t);
-	//
-	const float staticFric = 0.5;
-	const float dynFric = 0.2f;
-	//
-	float jTangent = -XMVectorGetX(XMVector3Dot(relativeVel, t));
+	float tLength = XMVectorGetX(XMVector3LengthSq(t));
 
-	XMVECTOR frictionImpulse;
-	if (fabs(jTangent) < j * staticFric)
+	if (tLength < 0.00000001f)
+		return;
+
+	tLength = sqrtf(tLength);
+
+	const XMVECTOR fn = -t / tLength;
+
+	const float denom = collPod.pBodyA->getInverseMass();
+
+	float fj = tLength / denom;
+
+	if (fj > j * staticFric)
 	{
-		frictionImpulse = jTangent * t;
+		fj = j *dynamicFric;
 	}
-	else
-	{
-		frictionImpulse = -j * t * dynFric;
-	}
+
+	const XMVECTOR fjv = fn * fj;
+
 
 	XMFLOAT3 temp;
-	XMStoreFloat3(&temp, frictionImpulse);
+	XMStoreFloat3(&temp, fjv);
 	collPod.pBodyA->applyImpulse(temp);
 
 	//setVelocity(m_velocity - impulse);

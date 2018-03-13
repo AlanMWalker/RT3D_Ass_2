@@ -42,11 +42,6 @@ void DynamicBody::updateDynamicBody(float dt)
 	m_position += dt * m_velocity; // step velocity and calculate the change in position and apply this translation to the current position 
 	m_velocity += (dt / 2.0f) * XMVectorSet(0.0f, G_VALUE, 0.0f, 0.0f); // step acceleration and apply this change to the velocity 
 
-	if (XMVectorGetX(XMVector3Length(m_velocity)) < 0.001)
-	{
-		m_velocity = XMVectorSet(0, 0, 0, 0);
-	}
-
 	m_worldMatrix = XMMatrixTranslation(XMVectorGetX(m_position), XMVectorGetY(m_position), XMVectorGetZ(m_position));
 }
 

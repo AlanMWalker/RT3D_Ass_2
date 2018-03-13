@@ -276,11 +276,11 @@ void Application::HandleUpdate()
 	if (IsKeyPressed(' '))
 	{ // slow the simulation down by sleeping when keyboard is pressed 
 		//std::this_thread::sleep_for(std::chrono::milliseconds(100));
-		m_deltaTime = m_appBaseDT / 6;
+		m_deltaTime = PhysicsDT / 6;
 	}
 	else
 	{
-		m_deltaTime = 1.0f / 60.0f;//m_appBaseDT;
+		m_deltaTime = PhysicsDT;
 
 	}
 	static bool dbU = false, dbI = false, dbD = false;
@@ -367,11 +367,12 @@ void Application::HandleUpdate()
 		m_dynamicBodyPtrs[1]->setVelocity(mSphereVel);
 
 		XMFLOAT3 returnedVerts[FACE_NORM_VERTICES_COUNT]{ XMFLOAT3(0.0f, 0.0f, 0.0f) };
-		const int idxA = 10;
-		const int idxB = 2;
+		constexpr int idxA = (7 * 30);
+		constexpr int idxB = idxA + 29;
 
 		m_pCurrentHeightmap->GetFaceVerticesByIndex(idxA, returnedVerts);
 		m_dynamicBodyPtrs[0]->setPosition(XMFLOAT3(returnedVerts[3].x, 20.0f, returnedVerts[3].z));
+		m_dynamicBodyPtrs[0]->setActivityFlag(true);
 
 		m_pCurrentHeightmap->GetFaceVerticesByIndex(idxB, returnedVerts);
 		m_dynamicBodyPtrs[1]->setPosition(XMFLOAT3(returnedVerts[3].x, 20.0f, returnedVerts[3].z));

@@ -33,7 +33,7 @@ class HeightMap;
 
 #define NON_SLOWED_DT 0.016f
 #define SLOWED_DT 0.001f
-#define G_VALUE -50.0f
+#define G_VALUE -98.1f
 
 #define SPHERE_COUNT 100
 #define MAX_HEIGHTMAPS_COUNT 4
