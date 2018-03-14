@@ -111,6 +111,9 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Filename).o</Outputs>
     </CustomBuild>
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="Sources.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
