@@ -15,6 +15,8 @@ struct DX_ALIGNED CollisionPOD
 	XMVECTOR normal;
 };
 
+bool SpherevsSphere(const XMFLOAT3& centreA, float radiusA, const XMFLOAT3& centreB, float radiusB);
+
 class DX_ALIGNED PhysicsWorld
 {
 public:

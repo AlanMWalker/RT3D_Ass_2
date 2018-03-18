@@ -1,5 +1,7 @@
 #include "HeightMap.h"
 
+#include <stack>
+
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
@@ -170,7 +172,8 @@ XMVECTOR HeightMap::closestPtPointTriangle(const XMVECTOR & pos, int faceIdx)
 void HeightMap::SetupStaticOctTree()
 {
 	STreeObject obj;
-	build_static_tree(&m_sTreeArray, XMFLOAT3{ 0.0f,0.0f,0.0f }, 15, 3);
+	STreeObject objList;
+	build_static_tree(&m_sTreeArray, XMFLOAT3{ 0.0f,0.0f,0.0f }, 40, 3);
 	const int max = GetFaceCount();
 	XMFLOAT3 points[4];
 	for (int i = 0; i < max; ++i)
@@ -180,9 +183,12 @@ void HeightMap::SetupStaticOctTree()
 		pObj->centre = points[3];
 		pObj->faceIdx = i;
 		pObj->pNextObject = nullptr;
-		pObj->radius = 0.5f;
+		pObj->radius = 2.0f;
 		insert_into_tree(&m_sTreeArray, ROOT_IDX, pObj);
 	}
+
+	obj.centre = XMFLOAT3(2, 2, 2);
+	obj.radius = 0.2f;
 }
 
 void HeightMap::RebuildVertexData(void)
@@ -653,6 +659,13 @@ bool HeightMap::RayCollision(XMVECTOR& rayPos, XMVECTOR rayDir, float raySpeed, 
 
 bool HeightMap::SphereCollision(const XMVECTOR & spherePos, float radius, XMVECTOR & colNormN, float& penetration)
 {
+	std::stack<int> a;
+	STreeObject obj;
+	XMStoreFloat3(&obj.centre, spherePos);
+	obj.radius = radius;
+	get_query_list(&m_sTreeArray, a, obj);
+	dprintf("Size from octtree = %d\n", a.size());
+
 	for (int f = 0; f < m_HeightMapFaceCount; ++f)
 	{
 		m_pFaceData[f].m_bCollided = false;

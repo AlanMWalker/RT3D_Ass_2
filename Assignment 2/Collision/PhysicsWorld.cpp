@@ -1,4 +1,5 @@
 #include "PhysicsWorld.h"
+#include "XMVectorUtils.h"
 
 PhysicsWorld::PhysicsWorld(DynamicBody * pDynamicBodies[SPHERE_COUNT])
 {
@@ -197,7 +198,7 @@ void PhysicsWorld::resolveHeightmapCollision(const CollisionPOD& collPod)
 
 	if (fj > j * staticFric)
 	{
-		fj = j *dynamicFric;
+		fj = j * dynamicFric;
 	}
 
 	const XMVECTOR fjv = fn * fj;
@@ -230,4 +231,17 @@ void PhysicsWorld::correctPosition(CollisionPOD & collPod)
 
 	collPod.pBodyA->setPosition(collPod.pBodyA->getPosition() - correction);
 	collPod.pBodyB->setPosition(collPod.pBodyB->getPosition() + correction);
+}
+
+bool SpherevsSphere(const XMFLOAT3 & centreA, float radiusA, const XMFLOAT3 & centreB, float radiusB)
+{
+	XMFLOAT3 dist = centreB - centreA;
+	float distSq = XMVectorGetX(XMVector3LengthSq(XMLoadFloat3(&dist)));
+	float radiusSum = radiusA + radiusB;
+
+	if (distSq > (radiusSum*radiusSum))
+	{
+		return false;
+	}
+	return true;
 }

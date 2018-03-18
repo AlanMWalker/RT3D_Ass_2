@@ -1,5 +1,6 @@
 #include "StaticOctTree.h"
 #include "XMVectorUtils.h"
+#include "PhysicsWorld.h"
 
 using namespace DirectX;
 
@@ -46,11 +47,14 @@ static void build_nodes(STreeArray * tree, const XMFLOAT3& centre, float halfBou
 	}
 }
 
-void get_query_list_nodes(STreeArray * tree, int nodeIdx, STreeObject * pList, const STreeObject & queryObj)
+static void get_query_list_nodes(STreeArray * tree, int nodeIdx, STreeObject * pList, const STreeObject & queryObj)
 {
-	STreeNode* pNode;
-
-	if (nodeIdx != ROOT_IDX)
+	STreeNode* pNode = nullptr;
+	if (nodeIdx == INVALID_IDX) //if we've reached gone to max depth return
+	{
+		return;
+	}
+	else if (nodeIdx == ROOT_IDX)
 	{
 		pNode = &tree->root;
 	}
@@ -59,9 +63,65 @@ void get_query_list_nodes(STreeArray * tree, int nodeIdx, STreeObject * pList, c
 		pNode = &tree->treeArr[nodeIdx];
 	}
 
+	if (!contains(*pNode, queryObj)) // if not in this octant, return
+	{
+		return;
+	}
+	else
+	{
+		for (int i = 0; i < 8; ++i)
+		{
+			get_query_list_nodes(tree, pNode->childrenIdxs[i], pList, queryObj);
+		}
 
+		STreeObject* pLoop = nullptr;
+		STreeObject* pEnd = nullptr;
+		for (pLoop = pList; pLoop; pLoop = pLoop->pNextObject)
+		{
+			pEnd = pLoop;
+		}
+		pEnd->pNextObject = pNode->pObjList;
+	}
 }
 
+static void get_query_list_nodes(STreeArray * tree, int nodeIdx, std::stack<int>& resultStack, const STreeObject & queryObj)
+{
+	STreeNode* pNode = nullptr;
+	if (nodeIdx == INVALID_IDX) //if we've reached gone to max depth return
+	{
+		return;
+	}
+	else if (nodeIdx == ROOT_IDX)
+	{
+		pNode = &tree->root;
+	}
+	else
+	{
+		pNode = &tree->treeArr[nodeIdx];
+	}
+
+	if (!contains(*pNode, queryObj)) // if not in this octant, return
+	{
+		return;
+	}
+	else
+	{
+		for (int i = 0; i < 8; ++i)
+		{
+			get_query_list_nodes(tree, pNode->childrenIdxs[i], resultStack, queryObj);
+		}
+
+		STreeObject* pLoop = nullptr;
+		STreeObject* pEnd = nullptr;
+		for (pLoop = pNode->pObjList; pLoop != nullptr; pLoop = pLoop->pNextObject)
+		{
+			//if (SpherevsSphere(pLoop->centre, pLoop->radius, queryObj.centre, queryObj.radius))
+			{
+				resultStack.push(pLoop->faceIdx);
+			}
+		}
+	}
+}
 // Header defined
 
 void build_static_tree(STreeArray* tree, const XMFLOAT3& centre, float halfBounds, int maxDepth)
@@ -158,11 +218,21 @@ void get_query_list(STreeArray* tree, STreeObject * pObjList, const STreeObject 
 	get_query_list_nodes(tree, ROOT_IDX, pObjList, queryObj);
 
 	int count = 0;
-	for (auto pObj = pObjList->pNextObject; pObj;)
+	for (auto pObj = pObjList; pObj; pObj = pObjList->pNextObject)
 	{
 		++count;
 	}
-	dprintf("\nTotal obj count - %d\n", count);
+	dprintf("\nTotal obj count - %d\n", count - 1);
+}
+
+void get_query_list(STreeArray* tree, std::stack<int>& results, const STreeObject & queryObj)
+{
+	if (!tree)
+	{
+		return;
+	}
+
+	get_query_list_nodes(tree, ROOT_IDX, results, queryObj);
 }
 
 void cleanup_static_tree(STreeArray * tree)

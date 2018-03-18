@@ -2,9 +2,10 @@
 #define STATIC_OCTTREE
 
 #include "Application.h"
+#include <stack>
 
 #define INVALID_IDX -1
-#define ROOT_IDX -1
+#define ROOT_IDX -2
 
 
 /* Prefix 'S' for static */
@@ -49,6 +50,8 @@ void insert_into_tree(STreeArray* tree, int idx, STreeObject* pObject);
 
 void get_query_list(STreeArray* tree, STreeObject* pObjList, const STreeObject & queryObj);
 
+void get_query_list(STreeArray* tree, std::stack<int>& results, const STreeObject & queryObj);
+
 void cleanup_static_tree(STreeArray* tree);
 
-#endif 
+#endif

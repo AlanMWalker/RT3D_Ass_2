@@ -244,6 +244,8 @@ void Application::HandleUpdate()
 	{
 		dbN = false;
 	}
+	//m_dynamicBodyPtrs[0]->setPosition(XMVectorSet(0, 20, 0, 0));
+	//m_dynamicBodyPtrs[0]->setVelocity(XMFLOAT3(0, 0, 0));
 
 	// Update Sphere
 	XMVECTOR vSColPos, vSColNorm;
