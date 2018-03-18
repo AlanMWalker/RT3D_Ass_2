@@ -11,7 +11,7 @@ const float Application::CollisionPercentage = 0.8f;
 const int CAMERA_TOP = 0;
 const int CAMERA_ROTATE = 1;
 const int CAMERA_MAX = 2;
-
+static CommonMesh* s_SphereMesh = nullptr;
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
@@ -50,6 +50,7 @@ bool Application::HandleStart()
 	m_cameraState = CAMERA_ROTATE;
 
 	mSphereCollided = false;
+	s_SphereMesh = CommonMesh::NewSphereMesh(this, 1.0f, 16, 16);
 	for (int i = 0; i < SPHERE_COUNT; ++i)
 	{
 		//if (i < 2)
@@ -60,7 +61,7 @@ bool Application::HandleStart()
 		{
 			SphereCollider* pSphereCollider = new SphereCollider;
 			pSphereCollider->radius = 1.0f;
-			m_dynamicBodyPtrs[i] = new DynamicBody(CommonMesh::NewSphereMesh(this, 1.0f, 16, 16), pSphereCollider);
+			m_dynamicBodyPtrs[i] = new DynamicBody(s_SphereMesh, pSphereCollider);
 			m_dynamicBodyPtrs[i]->setMass(1.0f);
 		}
 		m_dynamicBodyPtrs[i]->setPosition(mSpherePos);

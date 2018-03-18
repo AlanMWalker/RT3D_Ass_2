@@ -14,12 +14,20 @@
 
 #include "App.h"
 
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <chrono>
 
 #include "D3DHelpers.h"
+
+//MEMORY LEAK CHECK
+#ifdef _DEBUG
+#define _CRTDBG_MAP_ALLOC  
+#include <stdlib.h>  
+#include <crtdbg.h>  
+#endif
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -521,6 +529,9 @@ static bool DoMessages()
 
 int Run(App *pApp)
 {
+#ifdef _DEBUG
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#endif
 	App::RegisterWindowClass();
 
 	HWND hWnd = CreateWindow(WINDOW_CLASS_NAME, "DirectX 11 Test", WS_OVERLAPPEDWINDOW,
@@ -625,6 +636,9 @@ int Run(App *pApp)
 	DestroyWindow(hWnd);
 	hWnd = NULL;
 
+#ifdef _DEBUG
+	_CrtDumpMemoryLeaks();
+#endif 
 	return 0;
 }
 

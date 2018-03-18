@@ -44,6 +44,7 @@ HeightMap::HeightMap(char* filename, float gridSize, float heightRange)
 	}
 
 	ReloadShader(); // This compiles the shader
+	SetupStaticOctTree();
 }
 
 
@@ -163,7 +164,25 @@ XMVECTOR HeightMap::closestPtPointTriangle(const XMVECTOR & pos, int faceIdx)
 	float v = vb / (va + vb + vc);
 	float w = 1.0f - u - v;
 
-	return u * v0 + v*v1 + w*v2;
+	return u * v0 + v * v1 + w * v2;
+}
+
+void HeightMap::SetupStaticOctTree()
+{
+	STreeObject obj;
+	build_static_tree(&m_sTreeArray, XMFLOAT3{ 0.0f,0.0f,0.0f }, 15, 3);
+	const int max = GetFaceCount();
+	XMFLOAT3 points[4];
+	for (int i = 0; i < max; ++i)
+	{
+		GetFaceVerticesByIndex(i, points);
+		STreeObject* pObj = new STreeObject;
+		pObj->centre = points[3];
+		pObj->faceIdx = i;
+		pObj->pNextObject = nullptr;
+		pObj->radius = 0.5f;
+		insert_into_tree(&m_sTreeArray, ROOT_IDX, pObj);
+	}
 }
 
 void HeightMap::RebuildVertexData(void)
@@ -293,6 +312,8 @@ HeightMap::~HeightMap()
 	Release(m_pHeightMapBuffer);
 
 	DeleteShader();
+
+	cleanup_static_tree(&m_sTreeArray);
 }
 
 //////////////////////////////////////////////////////////////////////
