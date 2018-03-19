@@ -278,8 +278,7 @@ void Application::HandleUpdate()
 
 	if (IsKeyPressed(' '))
 	{ // slow the simulation down by sleeping when keyboard is pressed 
-		//std::this_thread::sleep_for(std::chrono::milliseconds(100));
-		m_deltaTime = PhysicsDT / 6;
+		m_deltaTime = (PhysicsDT / 10.0f);
 	}
 	else
 	{
@@ -435,7 +434,7 @@ void Application::HandleUpdate()
 #pragma endregion
 
 
-#pragma region Change Heightmap Controls
+#pragma region Change Heightmap Controls (TAP TAB)
 
 	static bool bIsTabDown = false;
 	static int heightMapIndex = 0; // current heightmap
