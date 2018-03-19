@@ -10,6 +10,8 @@
 //**********************************************************************
 
 #include "Application.h"
+#include "StaticOctTree.h"	
+
 
 static const char * const g_aTextureFileNames[] = {
 	"Resources/Intersection.dds",
@@ -69,6 +71,8 @@ private:
 	void BuildCollisionData(void);
 	XMVECTOR closestPtPointTriangle(const XMVECTOR& pos, int faceIdx);
 
+	void SetupStaticOctTree();
+
 	// Marked for removal 
 	XMFLOAT3 GetFaceNormal(int faceIndex, int offset);
 	// Marked for removal 
@@ -104,6 +108,8 @@ private:
 	ID3D11Texture2D *m_pTextures[NUM_TEXTURE_FILES];
 	ID3D11ShaderResourceView *m_pTextureViews[NUM_TEXTURE_FILES];
 	ID3D11SamplerState *m_pSamplerState;
+
+	STreeArray m_sTreeArray;
 
 };
 

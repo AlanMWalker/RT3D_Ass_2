@@ -1,4 +1,4 @@
 https://gafferongames.com/post/integration_basics/
 https://gafferongames.com/post/fix_your_timestep/
 https://gamedevelopment.tutsplus.com/series/how-to-create-a-custom-physics-engine--gamedev-12715
-
+https://geidav.wordpress.com/2014/08/18/advanced-octrees-2-node-representations/

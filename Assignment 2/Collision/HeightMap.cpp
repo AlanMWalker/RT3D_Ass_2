@@ -1,5 +1,7 @@
 #include "HeightMap.h"
 
+#include <stack>
+
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
@@ -44,6 +46,7 @@ HeightMap::HeightMap(char* filename, float gridSize, float heightRange)
 	}
 
 	ReloadShader(); // This compiles the shader
+	SetupStaticOctTree();
 }
 
 
@@ -109,61 +112,89 @@ XMVECTOR HeightMap::closestPtPointTriangle(const XMVECTOR & pos, int faceIdx)
 	/*
 	Implementation taken from Real Time 3D Collision Detection book.
 	*/
-	XMVECTOR v0, v1, v2;
-	v0 = XMLoadFloat3(&m_pFaceData[faceIdx].m_v0);
-	v1 = XMLoadFloat3(&m_pFaceData[faceIdx].m_v1);
-	v2 = XMLoadFloat3(&m_pFaceData[faceIdx].m_v2);
+	XMVECTOR a, b, c;
+	a = XMLoadFloat3(&m_pFaceData[faceIdx].m_v0);
+	b = XMLoadFloat3(&m_pFaceData[faceIdx].m_v1);
+	c = XMLoadFloat3(&m_pFaceData[faceIdx].m_v2);
 
-	XMVECTOR vA, vB, vC;
-	vA = v1 - v0;
-	vB = v2 - v0;
-	vC = v2 - v1;
+	XMVECTOR ab, ac, ap;
+	ab = b - a;
+	ac = c - a;
+	ap = pos - a;
 
-	float snom = XMVectorGetX(XMVector3Dot(pos - v0, vA));
-	float sdenom = XMVectorGetX(XMVector3Dot(pos - v1, v0 - v1));
+	float d1 = XMVectorGetX(XMVector3Dot(ab, ap));
+	float d2 = XMVectorGetX(XMVector3Dot(ac, ap));
 
-	float tnom = XMVectorGetX(XMVector3Dot(pos - v0, vB));
-	float tdenom = XMVectorGetX(XMVector3Dot(pos - v2, v0 - v2));
-
-	if (snom <= 0.0f && tnom <= 0.0f)
-		return v0;
-
-	float unom = XMVectorGetX(XMVector3Dot(pos - v1, vC));
-	float udenom = XMVectorGetX(XMVector3Dot(pos - v2, v1 - v2));
-
-	if (sdenom <= 0.0f && unom <= 0.0f)
-		return v1;
-
-	if (tdenom <= 0.0f && udenom <= 0)
-		return v2;
-
-	XMVECTOR n = XMVector3Cross(v1 - v0, v2 - v0);
-	float vc = XMVectorGetX(XMVector3Dot(n, XMVector3Cross(v0 - pos, v1 - pos)));
-
-	if (vc <= 0 && snom >= 0.0f && sdenom >= 0.0f)
+	if (d1 <= 0.0f && d2 <= 0.0f)
 	{
-		return v0 + snom / (snom + sdenom)*vA;
+		return a;
 	}
 
-	float va = XMVectorGetX(XMVector3Dot(n, XMVector3Cross(v1 - pos, v2 - pos)));
-
-	if (va <= 0.0f && unom >= 0.0f && udenom >= 0.0f)
+	XMVECTOR bp = pos - b;
+	float d3 = XMVectorGetX(XMVector3Dot(ab, bp));
+	float d4 = XMVectorGetX(XMVector3Dot(ac, bp));
+	if (d3 >= 0.0f && d4 <= d3)
 	{
-		return v1 + unom / (unom + udenom) * vC;
+		return b;
 	}
 
-	float vb = XMVectorGetX(XMVector3Dot(n, XMVector3Cross(v2 - pos, v0 - pos)));
-
-	if (vb <= 0.0f && tnom >= 0.0f && tdenom >= 0.0f)
+	float vc = d1 * d4 - d3 * d2;
+	if (vc <= 0.0f && d1 >= 0.0f && d3 <= 0.0f)
 	{
-		return v0 + tnom / (tnom + tdenom) * vB;
+		float v = d1 / (d1 - d3);
+		return a + v * ab;
 	}
 
-	float u = va / (va + vb + vc);
-	float v = vb / (va + vb + vc);
-	float w = 1.0f - u - v;
+	XMVECTOR cp = pos - c;
+	float d5 = XMVectorGetX(XMVector3Dot(ab, cp));
+	float d6 = XMVectorGetX(XMVector3Dot(ac, cp));
 
-	return u * v0 + v*v1 + w*v2;
+	if (d6 >= 0.0f && d5 <= d6)
+	{
+		return c;
+	}
+
+	float vb = d5 * d2 - d1 * d6;
+	if (vb <= 0.0f && d2 >= 0.0f && d6 <= 0.0f)
+	{
+		float w = d2 / (d2 - d6);
+		return a + w * ac;
+	}
+
+	float va = d3 * d6 - d5 * d4;
+	if (va <= 0.0f && (d4 - d3) >= 0.0f && (d5 - d6) >= 0.0f)
+	{
+		float w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
+		return b + w * (c - b);
+	}
+
+	float denom = 1.0f / (va + vb + vc);
+	float v = vb * denom;
+	float w = vc * denom;
+
+	return a + ab * v + ac * w;
+}
+
+void HeightMap::SetupStaticOctTree()
+{
+	STreeObject obj;
+	STreeObject objList;
+	build_static_tree(&m_sTreeArray, XMFLOAT3{ 0.0f,0.0f,0.0f }, 40, 3);
+	const int max = GetFaceCount();
+	XMFLOAT3 points[4];
+	for (int i = 0; i < max; ++i)
+	{
+		GetFaceVerticesByIndex(i, points);
+		STreeObject* pObj = new STreeObject;
+		pObj->centre = points[3];
+		pObj->faceIdx = i;
+		pObj->pNextObject = nullptr;
+		pObj->radius = 2.0f;
+		insert_into_tree(&m_sTreeArray, ROOT_IDX, pObj);
+	}
+
+	obj.centre = XMFLOAT3(2, 2, 2);
+	obj.radius = 0.2f;
 }
 
 void HeightMap::RebuildVertexData(void)
@@ -293,6 +324,8 @@ HeightMap::~HeightMap()
 	Release(m_pHeightMapBuffer);
 
 	DeleteShader();
+
+	cleanup_static_tree(&m_sTreeArray);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -632,34 +665,38 @@ bool HeightMap::RayCollision(XMVECTOR& rayPos, XMVECTOR rayDir, float raySpeed, 
 
 bool HeightMap::SphereCollision(const XMVECTOR & spherePos, float radius, XMVECTOR & colNormN, float& penetration)
 {
-	for (int f = 0; f < m_HeightMapFaceCount; ++f)
-	{
-		m_pFaceData[f].m_bCollided = false;
-	}
+	//broadphase for heightmap collision via linear oct-tree
+	std::stack<int> possibleCollidingFaces;
+	STreeObject obj;
+	XMStoreFloat3(&obj.centre, spherePos);
+	obj.radius = radius;
 
-	XMVECTOR vNormal, vVert;
-
-	//Current : Brute force ( slow )
-	for (int f = 0; f < m_HeightMapFaceCount; ++f)
+	get_static_oct_tree_query_list(&m_sTreeArray, possibleCollidingFaces, obj);
+	while (!possibleCollidingFaces.empty())
 	{
-		if (m_pFaceData[f].m_bDisabled)
+		const int top = possibleCollidingFaces.top();
+
+		//if the face is disabled -> ignore collision and pop the stack
+		if (m_pFaceData[top].m_bDisabled)
 		{
+			possibleCollidingFaces.pop();
 			continue;
 		}
 
-		XMVECTOR closestPoint = closestPtPointTriangle(spherePos, f); // find closest point on triangle to centre of sphere
-		XMVECTOR v = closestPoint - spherePos; // get vector from spehre to closest point
+		XMVECTOR closestPoint = closestPtPointTriangle(spherePos, top);
+		XMVECTOR v = closestPoint - spherePos;
 
-		const float distSquared = XMVectorGetX(XMVector3Dot(v, v)); // dot product this vector with itself to get the distance squared
-		if (distSquared <= radius * radius) // if the distance squared is less than or equal to the radius
-											// then a collision occured
+		const float dist = XMVectorGetX(XMVector3Dot(v, v));
+		if (dist <= radius * radius)
 		{
-			colNormN = XMLoadFloat3(&m_pFaceData[f].m_vNormal);
-			penetration = radius - sqrt(distSquared);
-			m_pFaceData[f].m_bCollided = true;
+			colNormN = XMLoadFloat3(&m_pFaceData[top].m_vNormal);
+			penetration = radius - sqrtf(dist);
+			m_pFaceData[top].m_bCollided = true;
 			RebuildVertexData();
+
 			return true;
 		}
+		possibleCollidingFaces.pop();
 	}
 	return false;
 }
