@@ -85,6 +85,7 @@ static void get_query_list_nodes(STreeArray * tree, int nodeIdx, std::stack<int>
 		}
 	}
 }
+
 // Header defined
 
 void build_static_tree(STreeArray* tree, const XMFLOAT3& centre, float halfBounds, int maxDepth)
@@ -120,14 +121,14 @@ void build_static_tree(STreeArray* tree, const XMFLOAT3& centre, float halfBound
 	}
 }
 
-void insert_into_tree(STreeArray* tree, int idx, STreeObject* pObject)
+void insert_into_static_tree(STreeArray* tree, int idx, STreeObject* pObject)
 {
-	float objPos[3], nodePos[3];
+	static float objPos[3], nodePos[3];
 	int index = 0;
 	bool straddle = 0;
 
-	//assert(root);
-	//assert(pObject);
+	static_assert(sizeof(objPos) == sizeof(XMFLOAT3), "incorrect data sizes!");
+	static_assert(sizeof(nodePos) == sizeof(XMFLOAT3), "incorrect data sizes!");
 
 	STreeNode* pNode = nullptr;
 	if (idx != ROOT_IDX)
@@ -139,9 +140,9 @@ void insert_into_tree(STreeArray* tree, int idx, STreeObject* pObject)
 		pNode = &tree->root;
 	}
 
-	static_assert(sizeof(objPos) == sizeof(XMFLOAT3), "incorrect data sizes!");
-	static_assert(sizeof(nodePos) == sizeof(XMFLOAT3), "incorrect data sizes!");
-
+	//book uses array format called "Point" which is a float array 
+	//to mititgate converting data structures memcpy the struct into a float
+	//to allow index based iteration
 	memcpy_s(objPos, sizeof(objPos), &pObject->centre, sizeof(XMFLOAT3));
 	memcpy_s(nodePos, sizeof(nodePos), &pNode->centre, sizeof(XMFLOAT3));
 
@@ -162,7 +163,7 @@ void insert_into_tree(STreeArray* tree, int idx, STreeObject* pObject)
 
 	if (!straddle && pNode->childrenIdxs[index] != INVALID_IDX)
 	{
-		insert_into_tree(tree, pNode->childrenIdxs[index], pObject);
+		insert_into_static_tree(tree, pNode->childrenIdxs[index], pObject);
 	}
 	else
 	{

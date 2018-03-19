@@ -108,7 +108,7 @@ void Application::ReloadShaders()
 void Application::HandleUpdate()
 {
 	m_pPhysicsWorld->tick();
-
+	m_pCurrentHeightmap->Tick();
 	if (m_cameraState == CAMERA_ROTATE)
 	{
 		if (this->IsKeyPressed('Q') && m_cameraZ > 38.0f)

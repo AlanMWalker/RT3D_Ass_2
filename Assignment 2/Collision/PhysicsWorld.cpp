@@ -1,5 +1,6 @@
 #include "PhysicsWorld.h"
 #include "XMVectorUtils.h"
+#include "DynamicOctTree.h"
 
 PhysicsWorld::PhysicsWorld(DynamicBody * pDynamicBodies[SPHERE_COUNT])
 {
@@ -7,6 +8,7 @@ PhysicsWorld::PhysicsWorld(DynamicBody * pDynamicBodies[SPHERE_COUNT])
 	{
 		m_pDynamicBodies[i] = pDynamicBodies[i];
 	}
+
 }
 
 PhysicsWorld::~PhysicsWorld()
@@ -16,6 +18,9 @@ PhysicsWorld::~PhysicsWorld()
 
 void PhysicsWorld::tick()
 {
+	m_pRootNode = new DTreeNode;
+	m_pRootNode->centre = XMFLOAT3(0, 0, 0);
+	m_pRootNode->halfBounds = 30.0f;
 	float dt = Application::s_pApp->m_deltaTime;
 	for (auto& pDynBody : m_pDynamicBodies)
 	{
@@ -30,9 +35,14 @@ void PhysicsWorld::tick()
 		}
 
 		pDynBody->updateDynamicBody(dt);
+		insert_into_dynamic_tree(m_pRootNode, pDynBody, 3);
 	}
 
-	generateCollisionPairs();
+	//generateCollisionPairs();
+
+
+	test_all_collisions(m_pRootNode, m_collisionPODs);
+	cleanup_dynamic_tree(m_pRootNode);
 	clearCollisionStack();
 }
 
@@ -69,7 +79,7 @@ void PhysicsWorld::clearCollisionStack()
 	while (!m_collisionPODs.empty())
 	{
 		CollisionPOD collPOD = m_collisionPODs.top();
-		bool result = checkIntersection(collPOD);
+		bool result = SpherevsSpherePaired(collPOD);
 		if (result)
 		{
 			resolveImpulse(collPOD);
@@ -101,8 +111,10 @@ void PhysicsWorld::clearCollisionStack()
 #pragma endregion
 }
 
-bool PhysicsWorld::checkIntersection(CollisionPOD & collPod)
+bool SpherevsSpherePaired(CollisionPOD & collPod)
 {
+	if (!collPod.pBodyA || !collPod.pBodyB)
+		return false;
 	// ideal -> Simplify to lookup table
 	if (collPod.pBodyA->getColliderBase()->colliderType == Sphere && collPod.pBodyB->getColliderBase()->colliderType == Sphere)
 	{

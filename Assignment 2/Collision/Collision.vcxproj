@@ -92,6 +92,7 @@
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="DynamicBody.cpp" />
+    <ClCompile Include="DynamicOctTree.cpp" />
     <ClCompile Include="HeightMap.cpp" />
     <ClCompile Include="StaticOctTree.cpp" />
     <ClCompile Include="PhysicsWorld.cpp" />
@@ -99,6 +100,7 @@
   <ItemGroup>
     <ClInclude Include="Application.h" />
     <ClInclude Include="DynamicBody.h" />
+    <ClInclude Include="DynamicOctTree.h" />
     <ClInclude Include="HeightMap.h" />
     <ClInclude Include="StaticOctTree.h" />
     <ClInclude Include="Macro.h" />
