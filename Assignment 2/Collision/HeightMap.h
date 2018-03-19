@@ -34,7 +34,7 @@ public:
 	~HeightMap();
 
 	void Draw(float frameCount);
-
+	void Tick() { RebuildVertexData(); }
 	bool ReloadShader();
 	void DeleteShader();
 

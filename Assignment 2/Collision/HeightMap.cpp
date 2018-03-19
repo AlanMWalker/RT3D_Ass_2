@@ -190,7 +190,7 @@ void HeightMap::SetupStaticOctTree()
 		pObj->faceIdx = i;
 		pObj->pNextObject = nullptr;
 		pObj->radius = 2.0f;
-		insert_into_tree(&m_sTreeArray, ROOT_IDX, pObj);
+		insert_into_static_tree(&m_sTreeArray, ROOT_IDX, pObj);
 	}
 
 	obj.centre = XMFLOAT3(2, 2, 2);
@@ -692,7 +692,6 @@ bool HeightMap::SphereCollision(const XMVECTOR & spherePos, float radius, XMVECT
 			colNormN = XMLoadFloat3(&m_pFaceData[top].m_vNormal);
 			penetration = radius - sqrtf(dist);
 			m_pFaceData[top].m_bCollided = true;
-			RebuildVertexData();
 
 			return true;
 		}

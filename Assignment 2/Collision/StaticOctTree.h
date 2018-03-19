@@ -46,7 +46,7 @@ struct STreeArray
 
 void build_static_tree(STreeArray* tree, const DirectX::XMFLOAT3& centre, float halfBounds, int maxDepth);
 
-void insert_into_tree(STreeArray* tree, int idx, STreeObject* pObject);
+void insert_into_static_tree(STreeArray* tree, int idx, STreeObject* pObject);
 
 //fills a data structure with any faces the query object may intersect with 
 void get_static_oct_tree_query_list(STreeArray* tree, std::stack<int>& results, const STreeObject & queryObj);

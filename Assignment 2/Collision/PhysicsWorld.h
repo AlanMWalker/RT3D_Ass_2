@@ -4,6 +4,9 @@
 #include "Application.h"
 #include <stack>
 
+//forward declarations
+struct DTreeNode;
+
 struct DX_ALIGNED CollisionPOD
 {
 	OP_NEW;
@@ -15,7 +18,11 @@ struct DX_ALIGNED CollisionPOD
 	XMVECTOR normal;
 };
 
+//Quick lightweight test (used for static tree collision detection with heightmap)
 bool SpherevsSphere(const XMFLOAT3& centreA, float radiusA, const XMFLOAT3& centreB, float radiusB);
+
+//More intense detection which calculates normal and collision detection results
+bool SpherevsSpherePaired(CollisionPOD& collPod);
 
 class DX_ALIGNED PhysicsWorld
 {
@@ -34,7 +41,6 @@ private:
 	void generateCollisionPairs();
 	void clearCollisionStack();
 
-	bool checkIntersection(CollisionPOD& collPod);
 	void resolveImpulse(CollisionPOD& collPod);
 
 	void resolveHeightmapCollision(const CollisionPOD& collPod);
@@ -44,6 +50,8 @@ private:
 
 	DynamicBody* m_pDynamicBodies[SPHERE_COUNT];
 	std::stack<CollisionPOD> m_collisionPODs;
+
+	DTreeNode* m_pRootNode = nullptr;
 };
 
 #endif 
