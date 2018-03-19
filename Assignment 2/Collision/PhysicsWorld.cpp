@@ -1,4 +1,6 @@
 #include "PhysicsWorld.h"
+#include "XMVectorUtils.h"
+#include "DynamicOctTree.h"
 
 PhysicsWorld::PhysicsWorld(DynamicBody * pDynamicBodies[SPHERE_COUNT])
 {
@@ -6,6 +8,7 @@ PhysicsWorld::PhysicsWorld(DynamicBody * pDynamicBodies[SPHERE_COUNT])
 	{
 		m_pDynamicBodies[i] = pDynamicBodies[i];
 	}
+
 }
 
 PhysicsWorld::~PhysicsWorld()
@@ -15,11 +18,31 @@ PhysicsWorld::~PhysicsWorld()
 
 void PhysicsWorld::tick()
 {
+	m_pRootNode = new DTreeNode;
+	m_pRootNode->centre = XMFLOAT3(0, 0, 0);
+	m_pRootNode->halfBounds = 30.0f;
 	float dt = Application::s_pApp->m_deltaTime;
 	for (auto& pDynBody : m_pDynamicBodies)
-		pDynBody->updateDynamicBody(dt);
+	{
+		if (!pDynBody->isActive())
+		{
+			continue;
+		}
 
-	generateCollisionPairs();
+		if (XMVectorGetY(pDynBody->getPosition()) < -10.0f) //  ball drops too far down 
+		{
+			pDynBody->setActivityFlag(false);
+		}
+
+		pDynBody->updateDynamicBody(dt);
+		insert_into_dynamic_tree(m_pRootNode, pDynBody, 3);
+	}
+
+	//generateCollisionPairs();
+
+
+	test_all_collisions(m_pRootNode, m_collisionPODs);
+	cleanup_dynamic_tree(m_pRootNode);
 	clearCollisionStack();
 }
 
@@ -52,10 +75,11 @@ void PhysicsWorld::generateCollisionPairs()
 
 void PhysicsWorld::clearCollisionStack()
 {
+#pragma region HANDLE THE SPHERE COLLISIONS STACK
 	while (!m_collisionPODs.empty())
 	{
 		CollisionPOD collPOD = m_collisionPODs.top();
-		bool result = checkIntersection(collPOD);
+		bool result = SpherevsSpherePaired(collPOD);
 		if (result)
 		{
 			resolveImpulse(collPOD);
@@ -64,10 +88,33 @@ void PhysicsWorld::clearCollisionStack()
 
 		m_collisionPODs.pop();
 	}
+
+#pragma endregion
+
+#pragma region HANDLE THE HEIGHTMAP COLLISIONS
+
+	for (auto pDynBody : m_pDynamicBodies)
+	{
+		if (!pDynBody->isActive())
+		{
+			continue;
+		}
+
+		if (!pDynBody->didCollideWithHeightmap())
+		{
+			continue;
+		}
+
+		resolveHeightmapCollision(*pDynBody->getHeightmapCollisionData());
+		positionalCorrectionHeightmap(*pDynBody->getHeightmapCollisionData());
+	}
+#pragma endregion
 }
 
-bool PhysicsWorld::checkIntersection(CollisionPOD & collPod)
+bool SpherevsSpherePaired(CollisionPOD & collPod)
 {
+	if (!collPod.pBodyA || !collPod.pBodyB)
+		return false;
 	// ideal -> Simplify to lookup table
 	if (collPod.pBodyA->getColliderBase()->colliderType == Sphere && collPod.pBodyB->getColliderBase()->colliderType == Sphere)
 	{
@@ -75,13 +122,13 @@ bool PhysicsWorld::checkIntersection(CollisionPOD & collPod)
 		const float radiusA = static_cast<SphereCollider*>(collPod.pBodyA->getColliderBase())->radius;
 		const float radiusB = static_cast<SphereCollider*>(collPod.pBodyB->getColliderBase())->radius;
 
-		float distSquared = XMVectorGetX(XMVector3LengthSq(posA - posB));
+		const float distSquared = XMVectorGetX(XMVector3LengthSq(posA - posB));
 		if (distSquared > (radiusA + radiusB) * (radiusA + radiusB))
 		{
 			return false;
 		}
 
-		float distance = sqrtf(distSquared);
+		const float distance = sqrtf(distSquared);
 
 		if (distance == 0.0f)
 		{
@@ -101,28 +148,112 @@ bool PhysicsWorld::checkIntersection(CollisionPOD & collPod)
 void PhysicsWorld::resolveImpulse(CollisionPOD & collPOD)
 {
 	//DynamicBody
-	const float e = 0.2f;
+	constexpr float e = 0.4f;
 	const float invMassSum = collPOD.pBodyA->getInverseMass() + collPOD.pBodyB->getInverseMass();
 
 	XMVECTOR relativeVel = collPOD.pBodyB->getVelocity() - collPOD.pBodyA->getVelocity();
 	const float velAlongNormal = XMVectorGetX(XMVector3Dot(relativeVel, collPOD.normal));
+	if (velAlongNormal > 0)
+	{// moving apart so do nothing 
+		return;
+	}
 	const float j = (-(1 + e) * velAlongNormal) / invMassSum;
 	XMVECTOR impulse = j * collPOD.normal;
 
-	collPOD.pBodyA->setVelocity(collPOD.pBodyA->getVelocity() - impulse);
-	collPOD.pBodyB->setVelocity(collPOD.pBodyB->getVelocity() + impulse);
+	XMFLOAT3 impulseFloat3A;
+	XMFLOAT3 impulseFloat3B;
+
+	XMStoreFloat3(&impulseFloat3A, -impulse);
+	XMStoreFloat3(&impulseFloat3B, impulse);
+
+	collPOD.pBodyA->applyImpulse(impulseFloat3A);
+	collPOD.pBodyB->applyImpulse(impulseFloat3B);
+}
+
+void PhysicsWorld::resolveHeightmapCollision(const CollisionPOD& collPod)
+{
+	constexpr float e = 0.7f;
+	constexpr float staticFric = 0.5f;
+	constexpr float dynamicFric = 0.2f;
+
+	//COLLISION IMPULSE
+	XMVECTOR relativeVel = -collPod.pBodyA->getVelocity();
+	const float velAlongNormal = XMVectorGetX(XMVector3Dot(relativeVel, collPod.normal));
+
+	if (velAlongNormal < 0.0f)
+	{
+		return;
+	}
+
+	const float j = -(1.0f + e) * velAlongNormal;
+	XMVECTOR impulse = j * collPod.normal;
+
+	XMFLOAT3 tempImpulse;
+	XMStoreFloat3(&tempImpulse, -impulse);
+	collPod.pBodyA->applyImpulse(tempImpulse);
+
+	// FRICTION IMPULSE
+	relativeVel = -collPod.pBodyA->getVelocity();
+	XMVECTOR t = relativeVel - (collPod.normal * XMVectorGetX(XMVector3Dot(collPod.normal, relativeVel)));
+	float tLength = XMVectorGetX(XMVector3LengthSq(t));
+
+	if (tLength < 0.00000001f)
+		return;
+
+	tLength = sqrtf(tLength);
+
+	const XMVECTOR fn = -t / tLength;
+
+	const float denom = collPod.pBodyA->getInverseMass();
+
+	float fj = tLength / denom;
+
+	if (fj > j * staticFric)
+	{
+		fj = j * dynamicFric;
+	}
+
+	const XMVECTOR fjv = fn * fj;
+
+
+	XMFLOAT3 temp;
+	XMStoreFloat3(&temp, fjv);
+	collPod.pBodyA->applyImpulse(temp);
+
+	//setVelocity(m_velocity - impulse);
+}
+
+void PhysicsWorld::positionalCorrectionHeightmap(const CollisionPOD& collPod)
+{
+	XMVECTOR correction = (max(collPod.penetration - Application::CollisionThreshold, 0.0f) / collPod.pBodyA->getInverseMass())
+		* Application::CollisionPercentage* collPod.normal;
+	collPod.pBodyA->setPosition(collPod.pBodyA->getPosition() + correction);
 }
 
 void PhysicsWorld::correctPosition(CollisionPOD & collPod)
 {
 	////float penetration = radius - XMVectorGetX(XMVector3Length(colPos - m_position));
-	const static float correctionThreshold = 0.01f;
-	const static float correctPercentage = 0.6f;
 	const float invMassA = collPod.pBodyA->getInverseMass();
 	const float invMassB = collPod.pBodyB->getInverseMass();
-	XMVECTOR correction = ((max(collPod.penetration - Application::CollisionThreshold, 0.0f)) / (invMassA + invMassB))
+
+	const float unit_converted_penetration = collPod.penetration / 10.0f;
+
+	XMVECTOR correction = ((max(unit_converted_penetration - Application::CollisionThreshold, 0.0f)) / (invMassA + invMassB))
 		* Application::CollisionPercentage * collPod.normal;
 
 	collPod.pBodyA->setPosition(collPod.pBodyA->getPosition() - correction);
 	collPod.pBodyB->setPosition(collPod.pBodyB->getPosition() + correction);
+}
+
+bool SpherevsSphere(const XMFLOAT3 & centreA, float radiusA, const XMFLOAT3 & centreB, float radiusB)
+{
+	XMFLOAT3 dist = centreB - centreA;
+	float distSq = XMVectorGetX(XMVector3LengthSq(XMLoadFloat3(&dist)));
+	float radiusSum = radiusA + radiusB;
+
+	if (distSq > (radiusSum*radiusSum))
+	{
+		return false;
+	}
+	return true;
 }

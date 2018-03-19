@@ -13,3 +13,4 @@ RC/
 /ipch/
 *.db-shm
 *.db-wal
+*.ipch

@@ -6,12 +6,12 @@
 Application* Application::s_pApp = NULL;
 
 const float Application::CollisionThreshold = 0.001f;
-const float Application::CollisionPercentage = 0.99f;
+const float Application::CollisionPercentage = 0.8f;
 
 const int CAMERA_TOP = 0;
 const int CAMERA_ROTATE = 1;
 const int CAMERA_MAX = 2;
-
+static CommonMesh* s_SphereMesh = nullptr;
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
@@ -22,7 +22,14 @@ bool Application::HandleStart()
 	m_frameCount = 0.0f;
 
 	m_bWireframe = true;
-	m_pHeightMap = new HeightMap("Resources/heightmap.bmp", 2.0f, 0.75f);
+	//m_pHeightMap = new HeightMap("Resources/heightmap.bmp", 2.0f, 0.75f);
+
+	m_heightMapPtrs[0] = new HeightMap("Resources/heightmap_a.bmp", 2.0f, 0.75f);
+	m_heightMapPtrs[1] = new HeightMap("Resources/heightmap_b.bmp", 2.0f, 0.75f);
+	m_heightMapPtrs[2] = new HeightMap("Resources/heightmap_c.bmp", 2.0f, 0.75f);
+	m_heightMapPtrs[3] = new HeightMap("Resources/heightmap_d.bmp", 2.0f, 0.75f);
+
+	m_pCurrentHeightmap = m_heightMapPtrs[0];
 
 	mSpherePos = XMFLOAT3(-14.0, 20.0f, -14.0f);
 	mSphereVel = XMFLOAT3(0.0f, 0.0f, 0.0f);
@@ -43,6 +50,7 @@ bool Application::HandleStart()
 	m_cameraState = CAMERA_ROTATE;
 
 	mSphereCollided = false;
+	s_SphereMesh = CommonMesh::NewSphereMesh(this, 1.0f, 16, 16);
 	for (int i = 0; i < SPHERE_COUNT; ++i)
 	{
 		//if (i < 2)
@@ -53,7 +61,8 @@ bool Application::HandleStart()
 		{
 			SphereCollider* pSphereCollider = new SphereCollider;
 			pSphereCollider->radius = 1.0f;
-			m_dynamicBodyPtrs[i] = new DynamicBody(CommonMesh::NewSphereMesh(this, 1.0f, 16, 16), pSphereCollider, m_pHeightMap);
+			m_dynamicBodyPtrs[i] = new DynamicBody(s_SphereMesh, pSphereCollider);
+			m_dynamicBodyPtrs[i]->setMass(1.0f);
 		}
 		m_dynamicBodyPtrs[i]->setPosition(mSpherePos);
 
@@ -72,11 +81,14 @@ bool Application::HandleStart()
 
 void Application::HandleStop()
 {
-	delete m_pHeightMap;
-
 	for (auto& pDynamicBody : m_dynamicBodyPtrs)
 	{
 		SAFE_FREE(pDynamicBody);
+	}
+
+	for (auto& pHeightMap : m_heightMapPtrs)
+	{
+		SAFE_FREE(pHeightMap);
 	}
 
 	this->CommonApp::HandleStop();
@@ -87,7 +99,7 @@ void Application::HandleStop()
 
 void Application::ReloadShaders()
 {
-	if (m_pHeightMap->ReloadShader() == false)
+	if (m_pCurrentHeightmap->ReloadShader() == false)
 		this->SetWindowTitle("Reload Failed - see Visual Studio output window. Press F5 to try again.");
 	else
 		this->SetWindowTitle("Collision: Zoom / Rotate Q, A / O, P, Camera C, Drop Sphere R, N and T, Wire W");
@@ -96,7 +108,7 @@ void Application::ReloadShaders()
 void Application::HandleUpdate()
 {
 	m_pPhysicsWorld->tick();
-
+	m_pCurrentHeightmap->Tick();
 	if (m_cameraState == CAMERA_ROTATE)
 	{
 		if (this->IsKeyPressed('Q') && m_cameraZ > 38.0f)
@@ -169,7 +181,6 @@ void Application::HandleUpdate()
 			mSphereVel = XMFLOAT3(0.0f, 0.2f, 0.0f);
 			m_dynamicBodyPtrs[0]->setVelocity(mSphereVel);
 			m_dynamicBodyPtrs[0]->setPosition(mSpherePos);
-			m_dynamicBodyPtrs[0]->resetCollidedFlag();
 			dbR = true;
 		}
 	}
@@ -186,7 +197,6 @@ void Application::HandleUpdate()
 			static int dx = 0;
 			static int dy = 0;
 			mSpherePos = XMFLOAT3(mSpherePos.x, 20.0f, mSpherePos.z);
-			m_dynamicBodyPtrs[0]->resetCollidedFlag();
 			m_dynamicBodyPtrs[0]->setVelocity(XMFLOAT3(0.0f, 0.2f, 0.0f));
 			m_dynamicBodyPtrs[0]->setPosition(mSpherePos);
 
@@ -225,7 +235,6 @@ void Application::HandleUpdate()
 			mSphereVel = XMFLOAT3(0.0f, 0.2f, 0.0f);
 			mGravityAcc = XMFLOAT3(0.0f, G_VALUE, 0.0f);
 			mSphereCollided = true;
-			m_dynamicBodyPtrs[0]->resetCollidedFlag();
 			m_dynamicBodyPtrs[0]->setPosition(mSpherePos);
 			m_dynamicBodyPtrs[0]->setVelocity(XMFLOAT3(0, 0, 0));
 			dbN = true;
@@ -235,6 +244,8 @@ void Application::HandleUpdate()
 	{
 		dbN = false;
 	}
+	//m_dynamicBodyPtrs[0]->setPosition(XMVectorSet(0, 20, 0, 0));
+	//m_dynamicBodyPtrs[0]->setVelocity(XMFLOAT3(0, 0, 0));
 
 	// Update Sphere
 	XMVECTOR vSColPos, vSColNorm;
@@ -254,7 +265,7 @@ void Application::HandleUpdate()
 
 		mSphereSpeed = XMVectorGetX(XMVector3Length(vSVel));
 
-		mSphereCollided = m_pHeightMap->RayCollision(vSPos, vSVel, mSphereSpeed, vSColPos, vSColNorm);
+		mSphereCollided = m_pCurrentHeightmap->RayCollision(vSPos, vSVel, mSphereSpeed, vSColPos, vSColNorm);
 
 		if (mSphereCollided)
 		{
@@ -267,12 +278,11 @@ void Application::HandleUpdate()
 
 	if (IsKeyPressed(' '))
 	{ // slow the simulation down by sleeping when keyboard is pressed 
-		//std::this_thread::sleep_for(std::chrono::milliseconds(100));
-		m_deltaTime = m_appBaseDT / 6;
+		m_deltaTime = (PhysicsDT / 10.0f);
 	}
 	else
 	{
-		m_deltaTime = 1.0f / 60.0f;//m_appBaseDT;
+		m_deltaTime = PhysicsDT;
 
 	}
 	static bool dbU = false, dbI = false, dbD = false;
@@ -287,14 +297,13 @@ void Application::HandleUpdate()
 			dbU = true;
 
 			indexInVecArray = 3;
-			m_pHeightMap->GetFaceVerticesByIndex(faceIndex, float3Array);
+			m_pCurrentHeightmap->GetFaceVerticesByIndex(faceIndex, float3Array);
 			mSpherePos = XMFLOAT3(float3Array[indexInVecArray].x, 20.0f, float3Array[indexInVecArray].z);
 			mSphereVel = XMFLOAT3(0.0f, 0.2f, 0.0f);
-			m_dynamicBodyPtrs[0]->resetCollidedFlag();
 			m_dynamicBodyPtrs[0]->setVelocity(mSphereVel);
 			m_dynamicBodyPtrs[0]->setPosition(mSpherePos);
 
-			if (faceIndex++ >= m_pHeightMap->GetFaceCount())
+			if (faceIndex++ >= m_pCurrentHeightmap->GetFaceCount())
 			{
 				faceIndex = 0;
 			}
@@ -312,16 +321,15 @@ void Application::HandleUpdate()
 			dbI = true;
 
 			indexInVecArray = 3;
-			m_pHeightMap->GetFaceVerticesByIndex(faceIndex, float3Array);
+			m_pCurrentHeightmap->GetFaceVerticesByIndex(faceIndex, float3Array);
 			mSpherePos = XMFLOAT3(float3Array[indexInVecArray].x, 20.0f, float3Array[indexInVecArray].z);
 			mSphereVel = XMFLOAT3(0.0f, 0.2f, 0.0f);
 			m_dynamicBodyPtrs[0]->setVelocity(mSphereVel);
 			m_dynamicBodyPtrs[0]->setPosition(mSpherePos);
-			m_dynamicBodyPtrs[0]->resetCollidedFlag();
 
 			if (--faceIndex < 0)
 			{
-				faceIndex = m_pHeightMap->GetFaceCount() - 1;
+				faceIndex = m_pCurrentHeightmap->GetFaceCount() - 1;
 			}
 		}
 	}
@@ -355,19 +363,20 @@ void Application::HandleUpdate()
 
 	if (IsKeyPressed('F'))
 	{
-		m_dynamicBodyPtrs[0]->resetCollidedFlag();
-		m_dynamicBodyPtrs[1]->resetCollidedFlag();
 		mSphereVel = XMFLOAT3(0.0f, 0.2f, 0.0f);
 
 		m_dynamicBodyPtrs[0]->setVelocity(mSphereVel);
 		m_dynamicBodyPtrs[1]->setVelocity(mSphereVel);
 
-		XMFLOAT3 returnedVerts[FACE_NORM_VERTICES_COUNT]{ XMFLOAT3(0.0f,0.0f,0.0f) };
+		XMFLOAT3 returnedVerts[FACE_NORM_VERTICES_COUNT]{ XMFLOAT3(0.0f, 0.0f, 0.0f) };
+		constexpr int idxA = (7 * 30);
+		constexpr int idxB = idxA + 29;
 
-		m_pHeightMap->GetFaceVerticesByIndex(0, returnedVerts);
+		m_pCurrentHeightmap->GetFaceVerticesByIndex(idxA, returnedVerts);
 		m_dynamicBodyPtrs[0]->setPosition(XMFLOAT3(returnedVerts[3].x, 20.0f, returnedVerts[3].z));
+		m_dynamicBodyPtrs[0]->setActivityFlag(true);
 
-		m_pHeightMap->GetFaceVerticesByIndex(m_pHeightMap->GetFaceCount() - 1, returnedVerts);
+		m_pCurrentHeightmap->GetFaceVerticesByIndex(idxB, returnedVerts);
 		m_dynamicBodyPtrs[1]->setPosition(XMFLOAT3(returnedVerts[3].x, 20.0f, returnedVerts[3].z));
 		m_dynamicBodyPtrs[1]->setActivityFlag(true);
 
@@ -386,7 +395,6 @@ void Application::HandleUpdate()
 				mSphereVel = XMFLOAT3(0.0f, 0.2f, 0.0f);
 				pBody->setVelocity(mSphereVel);
 				pBody->setPosition(mSpherePos);
-				pBody->resetCollidedFlag();
 				pBody->setActivityFlag(true);
 			}
 			dbUp = true;
@@ -397,7 +405,7 @@ void Application::HandleUpdate()
 		dbUp = false;
 	}
 
-	static bool enableBase = false;
+	static bool disableBase = true;
 	static bool dbH = false;
 
 	if (IsKeyPressed('H'))
@@ -405,22 +413,43 @@ void Application::HandleUpdate()
 		if (!dbH)
 		{
 			dbH = true;
-			if (enableBase)
+			if (!disableBase)
 			{
-				const int hiddenCount = m_pHeightMap->EnableAll();
+				const int hiddenCount = m_pCurrentHeightmap->EnableAll();
 				dprintf("Hidden count: %d\n", hiddenCount);
 			}
 			else
 			{
-				const int hiddenCount = m_pHeightMap->DisableBelowLevel(Y_DISABLE_VALUE);
+				const int hiddenCount = m_pCurrentHeightmap->DisableBelowLevel(Y_DISABLE_VALUE);
 				dprintf("Hidden count: %d\n", hiddenCount);
 			}
-			enableBase = !enableBase;
+			disableBase = !disableBase;
 		}
 	}
 	else
 	{
 		dbH = false;
+	}
+
+#pragma endregion
+
+
+#pragma region Change Heightmap Controls (TAP TAB)
+
+	static bool bIsTabDown = false;
+	static int heightMapIndex = 0; // current heightmap
+	if (IsKeyPressed(VK_TAB))
+	{
+		if (!bIsTabDown)
+		{
+			heightMapIndex + 1 < MAX_HEIGHTMAPS_COUNT ? ++heightMapIndex : heightMapIndex = 0;
+			m_pCurrentHeightmap = m_heightMapPtrs[heightMapIndex];
+			bIsTabDown = true;
+		}
+	}
+	else
+	{
+		bIsTabDown = false;
 	}
 
 #pragma endregion
@@ -462,7 +491,7 @@ void Application::HandleRender()
 
 	this->SetWorldMatrix(m_dynamicBodyPtrs[0]->getWorldMatrix());
 	SetDepthStencilState(false, true);
-	m_pHeightMap->Draw(m_frameCount);
+	m_pCurrentHeightmap->Draw(m_frameCount);
 
 #pragma region DynamicBodyTesting
 
@@ -474,10 +503,10 @@ void Application::HandleRender()
 		}
 
 		SetWorldMatrix(pDynamicBody->getWorldMatrix());
-		SetDepthStencilState(false, false);
+		//SetDepthStencilState(false, false);
 		if (pDynamicBody->getCommonMesh())
 		{
-			pDynamicBody->getCommonMesh()->Draw();
+			//pDynamicBody->getCommonMesh()->Draw();
 		}
 
 		SetWorldMatrix(pDynamicBody->getWorldMatrix());

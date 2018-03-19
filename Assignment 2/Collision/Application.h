@@ -33,9 +33,10 @@ class HeightMap;
 
 #define NON_SLOWED_DT 0.016f
 #define SLOWED_DT 0.001f
-#define G_VALUE -50.0f
+#define G_VALUE -98.1f
 
 #define SPHERE_COUNT 100
+#define MAX_HEIGHTMAPS_COUNT 4
 
 class PhysicsWorld;
 
@@ -44,10 +45,15 @@ class Application :
 {
 public:
 	static Application* s_pApp;
+
 	float m_deltaTime = NON_SLOWED_DT;
 	static const float CollisionThreshold;
 	static const float CollisionPercentage;
+
+	HeightMap* GetHeightmap() { return m_pCurrentHeightmap; }
+
 protected:
+
 	bool HandleStart();
 	void HandleStop();
 	void HandleUpdate();
@@ -55,7 +61,7 @@ protected:
 
 private:
 
-	DynamicBody* getNextAvailableBody();
+	DynamicBody * getNextAvailableBody();
 
 	float m_frameCount;
 
@@ -68,7 +74,9 @@ private:
 
 	int m_cameraState;
 
-	HeightMap* m_pHeightMap;
+	HeightMap* m_heightMapPtrs[MAX_HEIGHTMAPS_COUNT] = { nullptr, nullptr, nullptr, nullptr };
+	HeightMap* m_pCurrentHeightmap = nullptr;
+
 	PhysicsWorld* m_pPhysicsWorld;
 
 	DynamicBody* m_dynamicBodyPtrs[SPHERE_COUNT];

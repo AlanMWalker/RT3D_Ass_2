@@ -2,39 +2,46 @@
 #include "Application.h"
 #include "HeightMap.h"
 #include "CommonMesh.h"
+#include "PhysicsWorld.h"
 
 using namespace DirectX;
 
 // Dynamic Body \\
 
-DynamicBody::DynamicBody(CommonMesh* pCommonMesh, ColliderBase* pCollider, HeightMap* pHeightMap)
-	: m_pCommonMesh(pCommonMesh), m_pHeightMap(pHeightMap), m_bCollided(false), m_bIsActive(true), m_pBaseCollider(pCollider)
+DynamicBody::DynamicBody(CommonMesh* pCommonMesh, ColliderBase* pCollider)
+	: m_pCommonMesh(pCommonMesh), m_bIsActive(true), m_pBaseCollider(pCollider)
 {
 	assert(pCommonMesh);
-	assert(pHeightMap);
 	assert(pCollider);
 	setVelocity(XMFLOAT3(0, 0, 0));
 	setPosition(XMFLOAT3(0, 0, 0));
+	m_pHeightMapCollision = new CollisionPOD;
+
+	memset(m_pHeightMapCollision, 0, sizeof(CollisionPOD));
+	m_pHeightMapCollision->pBodyA = this;
+
 	m_worldMatrix = XMMatrixTranslation(XMVectorGetX(m_position), XMVectorGetY(m_position), XMVectorGetZ(m_position));
 }
 
 DynamicBody::~DynamicBody()
 {
 	SAFE_FREE(m_pBaseCollider);
+	SAFE_FREE(m_pHeightMapCollision);
 }
 
 void DynamicBody::updateDynamicBody(float dt)
 {
-	if (m_bCollided || !m_bIsActive)
+	if (!m_bIsActive)
 	{
 		return;
 	}
+	checkHeightMapCollision();
 
+	//m_velocity += dt * XMVectorSet(0.0f, G_VALUE, 0.0f, 0.0f);
 	m_velocity += (dt / 2.0f) * XMVectorSet(0.0f, G_VALUE, 0.0f, 0.0f); // step acceleration and apply this change to the velocity 
 	m_position += dt * m_velocity; // step velocity and calculate the change in position and apply this translation to the current position 
 	m_velocity += (dt / 2.0f) * XMVectorSet(0.0f, G_VALUE, 0.0f, 0.0f); // step acceleration and apply this change to the velocity 
 
-	checkHeightMapCollision();
 	m_worldMatrix = XMMatrixTranslation(XMVectorGetX(m_position), XMVectorGetY(m_position), XMVectorGetZ(m_position));
 }
 
@@ -58,9 +65,34 @@ void DynamicBody::setVelocity(const DirectX::XMFLOAT3 & vel)
 	m_velocity = XMLoadFloat3(&vel);
 }
 
+void DynamicBody::applyImpulse(const XMFLOAT3 & impulse)
+{
+	XMVECTOR impulseVec = XMVectorSet(impulse.x, impulse.y, impulse.z, 0.0f);
+	XMVECTOR vel = getVelocity();
+	vel += (m_invMass * impulseVec);
+
+	setVelocity(vel);
+}
+
+void DynamicBody::setMass(float mass)
+{
+	if (mass != 0.0f)
+	{
+		m_mass = mass;
+		m_invMass = 1.0f / mass;
+	}
+	else
+	{
+		m_mass = 0;
+		m_invMass = 0.0f;
+	}
+}
+
 void DynamicBody::checkHeightMapCollision()
 {
-	float e = 0.25f;
+	float e = 0.4f;
+	HeightMap* pCurrentHeightmap = Application::s_pApp->GetHeightmap();
+	assert(pCurrentHeightmap);
 
 	switch (m_pBaseCollider->colliderType)
 	{
@@ -71,8 +103,8 @@ void DynamicBody::checkHeightMapCollision()
 		XMVECTOR colPos;
 		XMVECTOR colNormal;
 
-		m_bCollided = m_pHeightMap->RayCollision(m_position, m_velocity, XMVectorGetX(XMVector3Length(m_velocity)), colPos, colNormal);
-		if (m_bCollided)
+		const bool bCollided = pCurrentHeightmap->RayCollision(m_position, m_velocity, XMVectorGetX(XMVector3Length(m_velocity)), colPos, colNormal);
+		if (bCollided)
 		{
 			setPosition(colPos);
 
@@ -82,7 +114,6 @@ void DynamicBody::checkHeightMapCollision()
 			XMVECTOR impulse = j * colNormal;
 
 			setVelocity(m_velocity - impulse);
-			m_bCollided = false;
 		}
 		break;
 	}
@@ -92,45 +123,21 @@ void DynamicBody::checkHeightMapCollision()
 		XMVECTOR colNormal;
 		float radius = static_cast<SphereCollider*>(m_pBaseCollider)->radius;
 		float penetration;
-		m_bCollided = m_pHeightMap->SphereCollision(m_position, radius, colNormal, penetration);
+		m_bDidHeightmapCollide = pCurrentHeightmap->SphereCollision(m_position, radius, colNormal, penetration);
 
-		if (m_bCollided)
+		if (m_bDidHeightmapCollide)
 		{
+			m_pHeightMapCollision->normal = colNormal;
+			m_pHeightMapCollision->penetration = penetration;
 
-			XMVECTOR relativeVel = -m_velocity;
-			const float velAlongNormal = XMVectorGetX(XMVector3Dot(relativeVel, colNormal));
-			const float j = -(1 + e) * velAlongNormal;
-			XMVECTOR impulse = j * colNormal;
-
-			setVelocity(m_velocity - impulse);
-
-			relativeVel = -m_velocity;
-			XMVECTOR t = relativeVel - (colNormal * XMVectorGetX(XMVector3Dot(colNormal, relativeVel)));
-			t = XMVector3Normalize(t);
-
-			const float staticFric = 0.1f;
-			const float dynFric = 0.2f;
-
-			float jTangent = -XMVectorGetX(XMVector3Dot(relativeVel, t));
-
-			if (jTangent != 0.0f)
-			{
-				if (fabs(jTangent) < j * staticFric)
-				{
-					setVelocity(m_velocity + (t* jTangent));
-				}
-				else
-				{
-					setVelocity(m_velocity + (t * -j * dynFric));
-				}
-			}
-			XMVECTOR correction = (max(penetration - Application::CollisionThreshold, 0.0f)) * Application::CollisionPercentage* colNormal;
-
-			m_position += correction;
-			m_bCollided = false;
-
+			return;
 		}
 		break;
 	}
 	}
+}
+
+const CollisionPOD * const DynamicBody::getHeightmapCollisionData() const
+{
+	return m_pHeightMapCollision;
 }

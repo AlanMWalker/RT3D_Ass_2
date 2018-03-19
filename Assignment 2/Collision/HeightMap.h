@@ -10,8 +10,10 @@
 //**********************************************************************
 
 #include "Application.h"
+#include "StaticOctTree.h"	
 
-static const char *const g_aTextureFileNames[] = {
+
+static const char * const g_aTextureFileNames[] = {
 	"Resources/Intersection.dds",
 	"Resources/Intersection.dds",
 	"Resources/Collision.dds",
@@ -27,19 +29,26 @@ static const size_t NUM_TEXTURE_FILES = sizeof g_aTextureFileNames / sizeof g_aT
 class HeightMap
 {
 public:
-	
+
 	HeightMap(char* filename, float gridSize, float heightRange);
 	~HeightMap();
 
 	void Draw(float frameCount);
+	void Tick() { RebuildVertexData(); }
 	bool ReloadShader();
 	void DeleteShader();
+
 	bool RayCollision(XMVECTOR& rayPos, XMVECTOR rayDir, float speed, XMVECTOR& colPos, XMVECTOR& colNormN);
 	bool SphereCollision(const XMVECTOR& spherePos, float radius, XMVECTOR& colNormN, float& penetration);
+
 	int DisableBelowLevel(float fY);
 	int EnableAll(void);
+
 	void GetFaceVerticesByIndex(int index, XMFLOAT3 vecArray[FACE_NORM_VERTICES_COUNT]) const;
+
 	int GetFaceCount() const { return m_HeightMapFaceCount; }
+	int GetWidth() const { return m_HeightMapWidth; }
+	int GetLength() const { return m_HeightMapLength; }
 
 private:
 
@@ -61,6 +70,8 @@ private:
 	bool PointOverQuad(XMVECTOR& vPos, XMVECTOR& v0, XMVECTOR& v1, XMVECTOR& v2);
 	void BuildCollisionData(void);
 	XMVECTOR closestPtPointTriangle(const XMVECTOR& pos, int faceIdx);
+
+	void SetupStaticOctTree();
 
 	// Marked for removal 
 	XMFLOAT3 GetFaceNormal(int faceIndex, int offset);
@@ -97,6 +108,8 @@ private:
 	ID3D11Texture2D *m_pTextures[NUM_TEXTURE_FILES];
 	ID3D11ShaderResourceView *m_pTextureViews[NUM_TEXTURE_FILES];
 	ID3D11SamplerState *m_pSamplerState;
+
+	STreeArray m_sTreeArray;
 
 };
 

@@ -14,12 +14,20 @@
 
 #include "App.h"
 
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <chrono>
 
 #include "D3DHelpers.h"
+
+//MEMORY LEAK CHECK
+#ifdef _DEBUG
+#define _CRTDBG_MAP_ALLOC  
+#include <stdlib.h>  
+#include <crtdbg.h>  
+#endif
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -199,7 +207,7 @@ void App::Render()
 	this->HandleRender();
 
 	// Present whatever.
-	m_pDXGISwapChain->Present(0, 0);
+	m_pDXGISwapChain->Present(1, 0);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -521,6 +529,9 @@ static bool DoMessages()
 
 int Run(App *pApp)
 {
+#ifdef _DEBUG
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#endif
 	App::RegisterWindowClass();
 
 	HWND hWnd = CreateWindow(WINDOW_CLASS_NAME, "DirectX 11 Test", WS_OVERLAPPEDWINDOW,
@@ -572,7 +583,7 @@ int Run(App *pApp)
 	chrono::time_point<chrono::steady_clock> prevTime = chrono::high_resolution_clock::now();
 	chrono::time_point<chrono::steady_clock> currentTime = prevTime;
 	static bool tickedOnce = false;
-
+	float accumulator = 0.0f;
 	while (DoMessages())
 	{
 		// Wait until the next 60th-of-a-second boundary has
@@ -585,6 +596,8 @@ int Run(App *pApp)
 		{
 			const chrono::milliseconds timeInMs = chrono::duration_cast<chrono::milliseconds>((currentTime - prevTime));
 			pApp->m_appBaseDT = (float)(timeInMs.count()) / 1000.0f;
+
+			accumulator += pApp->m_appBaseDT > PhysicsDT ? pApp->m_appBaseDT : (pApp->m_appBaseDT = PhysicsDT);
 		}
 
 		for (;;)
@@ -602,7 +615,11 @@ int Run(App *pApp)
 
 		nextUpdate.QuadPart = now.QuadPart + oneFrame.QuadPart;
 
-		pApp->Update();
+		while (accumulator >= PhysicsDT)
+		{
+			pApp->Update();
+			accumulator -= PhysicsDT;
+		}
 
 		pApp->Render();
 
@@ -619,6 +636,9 @@ int Run(App *pApp)
 	DestroyWindow(hWnd);
 	hWnd = NULL;
 
+#ifdef _DEBUG
+	_CrtDumpMemoryLeaks();
+#endif 
 	return 0;
 }
 
