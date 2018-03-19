@@ -136,8 +136,8 @@ void cleanup_dynamic_tree(DTreeNode* pNode)
 	{
 		cleanup_dynamic_tree(pNode->pChildren[i]);
 	}
-	//SAFE_FREE(pNode);
-	pNode->~DTreeNode();
+	SAFE_FREE(pNode);
+	//pNode->~DTreeNode();
 }
 
 DTreeNode::~DTreeNode()

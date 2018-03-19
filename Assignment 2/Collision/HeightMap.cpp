@@ -825,48 +825,6 @@ bool HeightMap::RayTriangle(int nFaceIndex, const XMVECTOR& rayPos, const XMVECT
 	}
 	// ...
 
-	// Step 1: Calculate |COLNORM|
-
-
-	//if( abs(colNormN.y)>0.99f ) return false;
-
-	// Step 2: Use |COLNORM| and any vertex on the triangle to calculate D
-
-
-	// Step 3: Calculate the demoninator of the COLDIST equation: (|COLNORM| dot |RAYDIR|) and early out if it is 0
-
-
-	// Step 4: Calculate the numerator of the COLDIST equation: -(D+(|COLNORM| dot RAYPOS))
-
-
-	// Step 5: Calculate COLDIST and early out if COLDIST is behind RAYDIR
-
-
-	// Step 6: Use COLDIST to calculate COLPOS
-
-	// Part 2: Work out if the intersection point falls within the triangle
-	//
-	// If the point is inside the triangle then it will be contained by the three new planes defined by:
-	// 1) RAYPOS, VERT0, VERT1
-	// 2) RAYPOS, VERT1, VERT2
-	// 3) RAYPOS, VERT2, VERT0
-
-//	 if( min(vert0.y,vert1.y,vert2.y)>colPos.y ) return false;
-
-	 // Move the ray backwards in case the ray is already on the plane
-
-
-	 //return true;
-	 // Step 1: Test against plane 1 and return false if behind plane
-
-
-	 // Step 2: Test against plane 2 and return false if behind plane
-
-
-	 // Step 3: Test against plane 3 and return false if behind plane
-
-
-	 // Step 4: Return true! (on triangle)
 	return true;
 }
 

@@ -13,7 +13,8 @@ PhysicsWorld::PhysicsWorld(DynamicBody * pDynamicBodies[SPHERE_COUNT])
 
 PhysicsWorld::~PhysicsWorld()
 {
-
+	cleanup_dynamic_tree(m_pRootNode);
+	SAFE_FREE(m_pRootNode);
 }
 
 void PhysicsWorld::tick()

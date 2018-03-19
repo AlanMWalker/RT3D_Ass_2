@@ -90,7 +90,6 @@ void Application::HandleStop()
 	{
 		SAFE_FREE(pHeightMap);
 	}
-
 	this->CommonApp::HandleStop();
 }
 

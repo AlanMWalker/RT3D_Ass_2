@@ -23,14 +23,13 @@ struct DTreeNode
 	DTreeObject* pObjList = nullptr;
 };
 
+//Insert dynamic bodies into tree
 void insert_into_dynamic_tree(DTreeNode* pNode, DynamicBody* pDynamicBody, int maxDepth);
 
+//test all collisions and produce a stack of collision pairs
 void test_all_collisions(DTreeNode* pNode, std::stack<CollisionPOD>& collisionResults);
 
-//delete all nodes
+//clean up dynami tree nodes
 void cleanup_dynamic_tree(DTreeNode* pNode);
-
-//delete all objects stored in linked lists on all nodes
-void clear_dynamic_tree_objects(DTreeNode* pNode);
 
 #endif
