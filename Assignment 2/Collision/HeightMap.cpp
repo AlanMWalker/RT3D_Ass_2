@@ -659,41 +659,38 @@ bool HeightMap::RayCollision(XMVECTOR& rayPos, XMVECTOR rayDir, float raySpeed, 
 
 bool HeightMap::SphereCollision(const XMVECTOR & spherePos, float radius, XMVECTOR & colNormN, float& penetration)
 {
-	std::stack<int> a;
+	//broadphase for heightmap collision via linear oct-tree
+	std::stack<int> possibleCollidingFaces;
 	STreeObject obj;
 	XMStoreFloat3(&obj.centre, spherePos);
 	obj.radius = radius;
-	get_query_list(&m_sTreeArray, a, obj);
-	dprintf("Size from octtree = %d\n", a.size());
 
-	for (int f = 0; f < m_HeightMapFaceCount; ++f)
+	get_static_oct_tree_query_list(&m_sTreeArray, possibleCollidingFaces, obj);
+	while (!possibleCollidingFaces.empty())
 	{
-		m_pFaceData[f].m_bCollided = false;
-	}
+		const int top = possibleCollidingFaces.top();
 
-	XMVECTOR vNormal, vVert;
-
-	//Current : Brute force ( slow )
-	for (int f = 0; f < m_HeightMapFaceCount; ++f)
-	{
-		if (m_pFaceData[f].m_bDisabled)
+		//if the face is disabled -> ignore collision and pop the stack
+		if (m_pFaceData[top].m_bDisabled)
 		{
+			possibleCollidingFaces.pop();
 			continue;
 		}
 
-		XMVECTOR closestPoint = closestPtPointTriangle(spherePos, f); // find closest point on triangle to centre of sphere
-		XMVECTOR v = closestPoint - spherePos; // get vector from spehre to closest point
+		XMVECTOR closestPoint = closestPtPointTriangle(spherePos, top);
+		XMVECTOR v = closestPoint - spherePos;
 
-		const float distSquared = XMVectorGetX(XMVector3Dot(v, v)); // dot product this vector with itself to get the distance squared
-		if (distSquared <= radius * radius) // if the distance squared is less than or equal to the radius
-											// then a collision occured
+		const float dist = XMVectorGetX(XMVector3Dot(v, v));
+		if (dist <= radius * radius)
 		{
-			colNormN = XMLoadFloat3(&m_pFaceData[f].m_vNormal);
-			penetration = radius - sqrt(distSquared);
-			m_pFaceData[f].m_bCollided = true;
+			colNormN = XMLoadFloat3(&m_pFaceData[top].m_vNormal);
+			penetration = radius - sqrtf(dist);
+			m_pFaceData[top].m_bCollided = true;
 			RebuildVertexData();
+
 			return true;
 		}
+		possibleCollidingFaces.pop();
 	}
 	return false;
 }

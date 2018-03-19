@@ -47,43 +47,6 @@ static void build_nodes(STreeArray * tree, const XMFLOAT3& centre, float halfBou
 	}
 }
 
-static void get_query_list_nodes(STreeArray * tree, int nodeIdx, STreeObject * pList, const STreeObject & queryObj)
-{
-	STreeNode* pNode = nullptr;
-	if (nodeIdx == INVALID_IDX) //if we've reached gone to max depth return
-	{
-		return;
-	}
-	else if (nodeIdx == ROOT_IDX)
-	{
-		pNode = &tree->root;
-	}
-	else
-	{
-		pNode = &tree->treeArr[nodeIdx];
-	}
-
-	if (!contains(*pNode, queryObj)) // if not in this octant, return
-	{
-		return;
-	}
-	else
-	{
-		for (int i = 0; i < 8; ++i)
-		{
-			get_query_list_nodes(tree, pNode->childrenIdxs[i], pList, queryObj);
-		}
-
-		STreeObject* pLoop = nullptr;
-		STreeObject* pEnd = nullptr;
-		for (pLoop = pList; pLoop; pLoop = pLoop->pNextObject)
-		{
-			pEnd = pLoop;
-		}
-		pEnd->pNextObject = pNode->pObjList;
-	}
-}
-
 static void get_query_list_nodes(STreeArray * tree, int nodeIdx, std::stack<int>& resultStack, const STreeObject & queryObj)
 {
 	STreeNode* pNode = nullptr;
@@ -111,14 +74,14 @@ static void get_query_list_nodes(STreeArray * tree, int nodeIdx, std::stack<int>
 			get_query_list_nodes(tree, pNode->childrenIdxs[i], resultStack, queryObj);
 		}
 
-		STreeObject* pLoop = nullptr;
-		STreeObject* pEnd = nullptr;
-		for (pLoop = pNode->pObjList; pLoop != nullptr; pLoop = pLoop->pNextObject)
+		STreeObject* pLoop = pLoop = pNode->pObjList;
+		while (pLoop)
 		{
-			//if (SpherevsSphere(pLoop->centre, pLoop->radius, queryObj.centre, queryObj.radius))
+			if (SpherevsSphere(pLoop->centre, pLoop->radius, queryObj.centre, queryObj.radius))
 			{
 				resultStack.push(pLoop->faceIdx);
 			}
+			pLoop = pLoop->pNextObject;
 		}
 	}
 }
@@ -208,24 +171,7 @@ void insert_into_tree(STreeArray* tree, int idx, STreeObject* pObject)
 	}
 }
 
-void get_query_list(STreeArray* tree, STreeObject * pObjList, const STreeObject & queryObj)
-{
-	if (!tree || !pObjList)
-	{
-		return;
-	}
-
-	get_query_list_nodes(tree, ROOT_IDX, pObjList, queryObj);
-
-	int count = 0;
-	for (auto pObj = pObjList; pObj; pObj = pObjList->pNextObject)
-	{
-		++count;
-	}
-	dprintf("\nTotal obj count - %d\n", count - 1);
-}
-
-void get_query_list(STreeArray* tree, std::stack<int>& results, const STreeObject & queryObj)
+void get_static_oct_tree_query_list(STreeArray* tree, std::stack<int>& results, const STreeObject & queryObj)
 {
 	if (!tree)
 	{
