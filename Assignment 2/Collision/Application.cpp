@@ -346,8 +346,8 @@ void Application::HandleUpdate()
 			mSpherePos = XMFLOAT3(float3Array[indexInVecArray].x, 20.0f, float3Array[indexInVecArray].z);
 			mSphereVel = XMFLOAT3(0.0f, 0.2f, 0.0f);
 			mGravityAcc = XMFLOAT3(0.0f, G_VALUE, 0.0f);
-			mSphereCollided = false;
-
+			m_dynamicBodyPtrs[0]->setVelocity(mSphereVel);
+			m_dynamicBodyPtrs[0]->setPosition(mSpherePos);
 			if (++indexInVecArray >= FACE_NORM_VERTICES_COUNT)
 			{
 				indexInVecArray = 0;

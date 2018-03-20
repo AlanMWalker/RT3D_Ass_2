@@ -1,6 +1,7 @@
 Release/
 Debug/
 RC/
+Submission/
 *.opensdf
 *.sdf
 *.VC.opendb
@@ -14,3 +15,5 @@ RC/
 *.db-shm
 *.db-wal
 *.ipch
+*.zip
+*.docx
